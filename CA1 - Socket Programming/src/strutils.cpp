@@ -48,15 +48,19 @@ std::vector<std::string> split(const std::string& str, const std::string& delim)
 }
 
 std::string toupper(const std::string& str) {
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+    std::string res(str);
+    std::transform(res.begin(), res.end(), res.begin(), [](unsigned char c) {
         return static_cast<char>(std::toupper(c));
     });
+    return res;
 }
 
 std::string tolower(const std::string& str) {
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+    std::string res(str);
+    std::transform(res.begin(), res.end(), res.begin(), [](unsigned char c) {
         return static_cast<char>(std::tolower(c));
     });
+    return res;
 }
 
 } // namespace strutils
