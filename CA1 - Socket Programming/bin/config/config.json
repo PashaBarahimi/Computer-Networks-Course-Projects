@@ -1,5 +1,4 @@
 {
-  "hostName":"127.0.0.1",
-  "commandChannelPort": 8000
+    "hostName": "127.0.0.1",
+    "commandChannelPort": 8000
 }
-
