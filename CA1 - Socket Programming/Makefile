@@ -6,6 +6,8 @@ PATH_DEP   := $(PATH_BUILD)/dep
 
 include common_vars.mk
 
+LDLIBS += -lcryptopp
+
 EXE_SERVER := server
 EXE_CLIENT := client
 
