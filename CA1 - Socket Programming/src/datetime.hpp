@@ -13,7 +13,7 @@ public:
     static void increaseServerDate(int days = 1);
 
 private:
-    static std::chrono::system_clock::time_point serverDate_;
+    static date::year_month_day serverDate_;
 };
 
 #endif // DATETIME_HPP_INCLUDE
