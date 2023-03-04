@@ -15,8 +15,13 @@ public:
     ~Hotel();
 
 private:
+    struct UserAccess {
+        int userId;
+        std::chrono::system_clock::time_point lastAccess;
+    };
+
     std::vector<User> users_;
-    std::unordered_map<std::string, int> tokens_;
+    std::unordered_map<std::string, UserAccess> tokens_;
     std::thread tokenCleaner_;
     std::promise<void> tokenCleanerCancel_;
 

@@ -36,13 +36,16 @@ std::string Hotel::generateToken(int userId) {
         }
         token.clear();
     }
-    tokens_[token] = userId;
+    tokens_[token] = {
+        userId,
+        std::chrono::system_clock::now(),
+    };
     return token;
 }
 
 void Hotel::removeExistingToken(int userId) {
     for (auto it = tokens_.begin(); it != tokens_.end(); ++it) {
-        if (it->second == userId) {
+        if (it->second.userId == userId) {
             tokens_.erase(it);
             break;
         }
@@ -52,14 +55,14 @@ void Hotel::removeExistingToken(int userId) {
 void Hotel::cleanTokens() {
     while (tokenCleanerCancel_.get_future().wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
         for (auto it = tokens_.begin(); it != tokens_.end();) {
-            if (it->second == -1) {
+            if (std::chrono::system_clock::now() - it->second.lastAccess > std::chrono::minutes(30)) {
                 it = tokens_.erase(it);
             }
             else {
                 ++it;
             }
         }
-        std::this_thread::sleep_for(std::chrono::minutes(30));
+        std::this_thread::sleep_for(std::chrono::minutes(10));
     }
 }
 
@@ -68,7 +71,7 @@ int Hotel::getUser(const std::string& token) const {
     if (it == tokens_.end()) {
         return -1;
     }
-    return it->second;
+    return it->second.userId;
 }
 
 int Hotel::findUser(const std::string& username) const {
