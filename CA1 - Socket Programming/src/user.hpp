@@ -10,8 +10,8 @@ public:
         User
     };
 
-    User(int id, const std::string& username, const std::string& password, Role role,
-         float balance = 0, const std::string& phoneNumber = "", const std::string& address = "");
+    User(int id, std::string username, std::string password, Role role,
+         int balance = 0, std::string phoneNumber = "", std::string address = "");
 
     void editInfo(const std::string& newPassword, const std::string& newPhoneNumber, const std::string& newAddress);
 
@@ -25,7 +25,7 @@ private:
     std::string username_;
     std::string password_;
     Role role_;
-    float balance_;
+    int balance_;
     std::string phoneNumber_;
     std::string address_;
 };

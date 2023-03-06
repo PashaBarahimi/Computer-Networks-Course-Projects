@@ -4,7 +4,7 @@
 #include <crypto++/hex.h>
 #include <crypto++/sha.h>
 
-namespace Crypto {
+namespace crypto {
 
 std::string SHA256(const std::string& input) {
     CryptoPP::SHA256 hash;
@@ -13,8 +13,8 @@ std::string SHA256(const std::string& input) {
     // clang-format off
     CryptoPP::StringSource(input, true,
         new CryptoPP::HashFilter(hash,
-            new CryptoPP::HexEncoder(
-                new CryptoPP::StringSink(digest)
+            new CryptoPP::Base64Encoder(
+                new CryptoPP::StringSink(digest), false
             )
         )
     );
@@ -29,12 +29,11 @@ std::string base64Encode(const std::string& input) {
     // clang-format off
     CryptoPP::StringSource(input, true,
         new CryptoPP::Base64Encoder(
-            new CryptoPP::StringSink(encoded)
+            new CryptoPP::StringSink(encoded), false
         )
     );
     // clang-format on
 
-    encoded.pop_back(); // Remove the newline character
     return encoded;
 }
 
@@ -52,4 +51,4 @@ std::string base64Decode(const std::string& encoded) {
     return decoded;
 }
 
-}; // namespace Crypto
+} // namespace crypto

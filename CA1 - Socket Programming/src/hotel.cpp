@@ -1,5 +1,6 @@
 #include "hotel.hpp"
 
+#include <algorithm>
 #include <random>
 
 #include "crypto.hpp"
@@ -17,21 +18,17 @@ std::string Hotel::generateTokenForUser(int userId) {
     removeExistingToken(userId);
     std::string token;
 
+    std::lock_guard<std::mutex> lock(tokensMutex_);
     while (true) {
         token = generateToken();
-        tokensMutex_.lock();
         if (tokens_.find(token) == tokens_.end()) {
-            tokensMutex_.unlock();
             break;
         }
-        tokensMutex_.unlock();
     }
-    tokensMutex_.lock();
     tokens_[token] = {
         userId,
         std::chrono::system_clock::now(),
     };
-    tokensMutex_.unlock();
     return token;
 }
 
@@ -53,14 +50,11 @@ std::string Hotel::generateToken() {
 }
 
 void Hotel::removeExistingToken(int userId) {
-    tokensMutex_.lock();
-    for (auto it = tokens_.begin(); it != tokens_.end(); ++it) {
-        if (it->second.userId == userId) {
-            tokens_.erase(it);
-            break;
-        }
-    }
-    tokensMutex_.unlock();
+    std::lock_guard<std::mutex> lock(tokensMutex_);
+    tokens_.erase(std::remove_if(tokens_.begin(), tokens_.end(), [userId](const auto& token) {
+                      return token.second.userId == userId;
+                  }),
+                  tokens_.end());
 }
 
 void Hotel::cleanTokens() {
@@ -80,9 +74,7 @@ void Hotel::cleanTokens() {
 }
 
 int Hotel::getUser(const std::string& token) {
-    tokensMutex_.lock();
     auto it = tokens_.find(token);
-    tokensMutex_.unlock();
     if (it == tokens_.end()) {
         return -1;
     }
@@ -90,14 +82,15 @@ int Hotel::getUser(const std::string& token) {
 }
 
 int Hotel::findUser(const std::string& username) const {
-    for (int i = 0; i < users_.size(); ++i) {
-        if (users_[i].getUsername() == username) {
-            return i;
-        }
+    auto it = std::find_if(users_.begin(), users_.end(), [username](const auto& user) {
+        return user.getUsername() == username;
+    });
+    if (it == users_.end()) {
+        return -1;
     }
-    return -1;
+    return it->getId();
 }
 
 bool Hotel::isPasswordCorrect(int userId, const std::string& password) const {
-    return users_[userId].isPasswordCorrect(Crypto::SHA256(password));
+    return users_[userId].isPasswordCorrect(crypto::SHA256(password));
 }
