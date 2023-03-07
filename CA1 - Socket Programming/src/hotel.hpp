@@ -12,7 +12,7 @@
 #include "user.hpp"
 
 constexpr int TOKEN_LENGTH = 32;
-constexpr std::chrono::minutes TOKEN_LIFETIME = std::chrono::minutes(30);
+constexpr std::chrono::minutes TOKEN_LIFETIME(30);
 
 class Hotel {
 public:

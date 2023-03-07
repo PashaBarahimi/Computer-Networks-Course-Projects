@@ -74,6 +74,7 @@ void Hotel::cleanTokens() {
 }
 
 int Hotel::getUser(const std::string& token) {
+    std::lock_guard<std::mutex> lock(tokensMutex_);
     auto it = tokens_.find(token);
     if (it == tokens_.end()) {
         return -1;
