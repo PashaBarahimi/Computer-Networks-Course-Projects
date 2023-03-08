@@ -51,10 +51,12 @@ std::string Hotel::generateToken() {
 
 void Hotel::removeExistingToken(int userId) {
     std::lock_guard<std::mutex> lock(tokensMutex_);
-    tokens_.erase(std::remove_if(tokens_.begin(), tokens_.end(), [userId](const auto& token) {
-                      return token.second.userId == userId;
-                  }),
-                  tokens_.end());
+    auto it = std::find_if(tokens_.begin(), tokens_.end(), [userId](const auto& token) {
+        return token.second.userId == userId;
+    });
+    if (it != tokens_.end()) {
+        tokens_.erase(it);
+    }
 }
 
 void Hotel::cleanTokens() {
