@@ -33,6 +33,7 @@
 #include <functional>
 #include <string>
 #include "../scheduler.h"
+#include "concurrentqueue.h"
 
 namespace cli
 {
@@ -46,8 +47,12 @@ class InputDevice
 public:
     using Handler = std::function< void( std::pair<KeyType,char> ) >;
 
-    explicit InputDevice(Scheduler& _scheduler) : scheduler(_scheduler) {}
+    explicit InputDevice(Scheduler& _scheduler) : scheduler(_scheduler), postToCustomQueue(false) {}
     virtual ~InputDevice() = default;
+
+    void SetCustomQueue(concurrent::Queue<std::pair<KeyType,char>>* q) { customQueue = q; }
+    void PostToCustomQueue() { postToCustomQueue = true; }
+    void PostToScheduler() { postToCustomQueue = false; }
 
     template <typename H>
     void Register(H&& h) { handler = std::forward<H>(h); }
@@ -56,17 +61,23 @@ protected:
 
     void Notify(std::pair<KeyType,char> k)
     {
+        if (postToCustomQueue) {
+            customQueue->push(k);
+        }
+        else {
         scheduler.Post([this,k](){ if (handler) handler(k); });
+        }
     }
 
 private:
 
     Scheduler& scheduler;
     Handler handler;
+    concurrent::Queue<std::pair<KeyType,char>>* customQueue;
+    bool postToCustomQueue;
 };
 
 } // namespace detail
 } // namespace cli
 
 #endif // CLI_DETAIL_INPUTDEVICE_H_
-

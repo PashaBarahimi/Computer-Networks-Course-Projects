@@ -8,18 +8,21 @@
 #include "cli/loopscheduler.h"
 
 ClientCLI::ClientCLI(HotelClient& client) : client_(client) {
+    inputQueue_ = new concurrent::Queue<std::pair<cli::detail::KeyType, char>>();
     setupCLI();
 }
 
 ClientCLI::~ClientCLI() {
     delete cli_;
     delete session_;
+    delete inputQueue_;
 }
 
 void ClientCLI::run() {
     cli::LoopScheduler scheduler;
     session_ = new cli::CliLocalSession(*cli_, scheduler, std::cout, 200);
     session_->ExitAction([&scheduler](auto& out) { scheduler.Stop(); });
+    session_->SetCustomQueue(inputQueue_);
     scheduler.Run();
 }
 
@@ -205,31 +208,21 @@ bool ClientCLI::getIntInput(std::ostream& out, const std::string& inputMsg, int&
 }
 
 std::string ClientCLI::getInput(std::ostream& out, const std::string& inputMsg, bool hidden, char mask) {
-    out << inputMsg;
-    char c;
-    std::ostringstream oss;
-    while ((c = std::cin.get()) != '\n') {
-        if (c == 127) { // backspace
-            if (!oss.str().empty()) {
-                std::string str = oss.str();
-                str.pop_back();
-                oss.str("");
-                oss << str;
-            }
-            out << "\b \b";
-        }
-        else {
-            oss << c;
-            if (hidden) {
-                out << mask;
-            }
-            else {
-                out << c;
-            }
+    out << inputMsg << std::flush;
+    std::string input;
+    inputQueue_->clear();
+    session_->PostToCustomQueue();
+    cli::detail::Terminal terminal(out);
+    while (true) {
+        auto c = inputQueue_->pop();
+        auto symbol = terminal.Keypressed(c, hidden, mask);
+        if (symbol.first == cli::detail::Symbol::command) {
+            input = symbol.second;
+            break;
         }
     }
-    out << std::endl;
-    return oss.str();
+    session_->PostToScheduler();
+    return input;
 }
 
 void ClientCLI::checkMainMenuItems() {

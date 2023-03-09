@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "cli/cli.h"
+#include "cli/clilocalsession.h"
+#include "cli/detail/concurrentqueue.h"
 #include "cli/loopscheduler.h"
 #include "hotel_client.hpp"
 
@@ -18,9 +20,10 @@ public:
 private:
     HotelClient& client_;
     cli::Cli* cli_;
-    cli::CliSession* session_;
+    cli::CliLocalSession* session_;
     std::vector<cli::CmdHandler> loginMenu_;
     std::vector<cli::CmdHandler> userMenu_;
+    concurrent::Queue<std::pair<cli::detail::KeyType, char>>* inputQueue_;
 
     void setupCLI();
     std::unique_ptr<cli::Menu> createMainMenu();

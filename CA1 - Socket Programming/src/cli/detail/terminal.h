@@ -77,7 +77,7 @@ class Terminal
 
     std::string GetLine() const { return currentLine; }
 
-    std::pair<Symbol, std::string> Keypressed(std::pair<KeyType, char> k)
+    std::pair<Symbol, std::string> Keypressed(std::pair<KeyType, char> k, bool hidden = false, char mask = '*')
     {
         switch (k.first)
         {
@@ -97,7 +97,10 @@ class Terminal
                 // go back to the previous char
                 out << '\b';
                 // output the rest of the line
-                out << std::string(currentLine.begin() + pos, currentLine.end());
+                if (hidden)
+                    out << std::string(currentLine.size() - position, mask);
+                else
+                    out << std::string(currentLine.begin() + pos, currentLine.end());
                 // remove last char
                 out << ' ';
                 // go back to the original position
@@ -121,7 +124,7 @@ class Terminal
                 if (position < currentLine.size())
                 {
                     out << beforeInput
-                        << currentLine[position]
+                        << (hidden ? mask : currentLine[position])
                         << afterInput << std::flush;
                     ++position;
                 }
@@ -145,10 +148,13 @@ class Terminal
                     const auto pos = static_cast<std::string::difference_type>(position);
 
                     // output the new char:
-                    out << beforeInput << c;
+                    out << beforeInput << (hidden ? mask : c);
                     // and the rest of the string:
-                    out << std::string(currentLine.begin() + pos, currentLine.end())
-                        << afterInput;
+                    if (hidden)
+                        out << std::string(currentLine.size() - position, mask);
+                    else
+                        out << std::string(currentLine.begin() + pos, currentLine.end())
+                            << afterInput;
 
                     // go back to the original position
                     out << std::string(currentLine.size() - position, '\b') << std::flush;
@@ -168,7 +174,10 @@ class Terminal
                 const auto pos = static_cast<std::string::difference_type>(position);
 
                 // output the rest of the line
-                out << std::string(currentLine.begin() + pos + 1, currentLine.end());
+                if (hidden)
+                    out << std::string(currentLine.size() - position, mask);
+                else
+                    out << std::string(currentLine.begin() + pos + 1, currentLine.end());
                 // remove last char
                 out << ' ';
                 // go back to the original position
@@ -182,7 +191,7 @@ class Terminal
                 const auto pos = static_cast<std::string::difference_type>(position);
 
                 out << beforeInput
-                    << std::string(currentLine.begin() + pos, currentLine.end())
+                    << (hidden ? std::string(currentLine.size() - position, mask) : std::string(currentLine.begin() + pos, currentLine.end()))
                     << afterInput << std::flush;
                 position = currentLine.size();
                 break;
