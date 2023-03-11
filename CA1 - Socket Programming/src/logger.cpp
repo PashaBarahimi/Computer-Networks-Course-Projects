@@ -3,11 +3,11 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <json.hpp>
 #include <sstream>
 
 #include "colorprint.hpp"
 #include "datetime.hpp"
-#include "json.hpp"
 #include "strutils.hpp"
 
 Logger::Logger(Logger::Level level)
