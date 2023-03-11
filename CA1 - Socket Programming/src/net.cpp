@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <regex>
 #include <sstream>
 
@@ -180,6 +181,144 @@ void Socket::sockaddrToIp(sockaddr_in addrIn, IpAddr& outAddr, Port& outPort) {
     auto addrInt = ntoh(addrIn.sin_addr.s_addr);
     outAddr = IpAddr(addrInt);
     outPort = ntoh(addrIn.sin_port);
+}
+
+Select::Select() {
+    FD_ZERO(&readMaster_);
+    FD_ZERO(&writeMaster_);
+    FD_ZERO(&exceptMaster_);
+    FD_ZERO(&readWorking_);
+    FD_ZERO(&writeWorking_);
+    FD_ZERO(&exceptWorking_);
+}
+
+Select::~Select() {
+    for (auto& s : socketsMap_) {
+        if (s.second.second) {
+            delete s.second.first;
+        }
+    }
+}
+
+void Select::addRead(Socket* socket, bool own) {
+    add(&readMaster_, socket, own);
+}
+void Select::addWrite(Socket* socket, bool own) {
+    add(&writeMaster_, socket, own);
+}
+void Select::addExcept(Socket* socket, bool own) {
+    add(&exceptMaster_, socket, own);
+}
+
+void Select::removeRead(Socket* socket) {
+    remove(&readMaster_, socket);
+}
+void Select::removeWrite(Socket* socket) {
+    remove(&writeMaster_, socket);
+}
+void Select::removeExcept(Socket* socket) {
+    remove(&exceptMaster_, socket);
+}
+
+bool Select::isInRead(const Socket* socket) const {
+    return FD_ISSET(socket->socket_, &readMaster_);
+}
+bool Select::isInWrite(const Socket* socket) const {
+    return FD_ISSET(socket->socket_, &writeMaster_);
+}
+bool Select::isInExcept(const Socket* socket) const {
+    return FD_ISSET(socket->socket_, &exceptMaster_);
+}
+
+int Select::select(int timeoutMs) {
+    timeval tv;
+    timeval* tvPtr = nullptr;
+    if (timeoutMs != -1) {
+        tv.tv_sec = timeoutMs / 1000;
+        tv.tv_usec = (timeoutMs % 1000) * 1000;
+        tvPtr = &tv;
+    }
+
+    readWorking_ = readMaster_;
+    writeWorking_ = writeMaster_;
+    exceptWorking_ = exceptMaster_;
+
+    fd_set* readWk = nullptr;
+    fd_set* writeWk = nullptr;
+    fd_set* exceptWk = nullptr;
+
+    if (isAnySet(&readMaster_)) {
+        readWk = &readWorking_;
+    }
+    if (isAnySet(&writeMaster_)) {
+        writeWk = &writeWorking_;
+    }
+    if (isAnySet(&exceptMaster_)) {
+        exceptWk = &exceptWorking_;
+    }
+
+    return ::select(max_, readWk, writeWk, exceptWk, tvPtr);
+}
+
+bool Select::isReadyRead(const Socket* socket) const {
+    return FD_ISSET(socket->socket_, &readWorking_);
+}
+bool Select::isReadyWrite(const Socket* socket) const {
+    return FD_ISSET(socket->socket_, &writeWorking_);
+}
+bool Select::isReadyExcept(const Socket* socket) const {
+    return FD_ISSET(socket->socket_, &exceptWorking_);
+}
+
+std::vector<Socket*> Select::getReadyRead() const {
+    return getReady(&readWorking_);
+}
+std::vector<Socket*> Select::getReadyWrite() const {
+    return getReady(&writeWorking_);
+}
+std::vector<Socket*> Select::getReadyExcept() const {
+    return getReady(&exceptWorking_);
+}
+
+std::vector<Socket*> Select::getReady(const fd_set* fdset) const {
+    std::vector<Socket*> readySockets;
+    for (int i = 0; i < max_; ++i) {
+        if (FD_ISSET(i, fdset)) {
+            const auto itr = socketsMap_.find(i);
+            readySockets.push_back(itr->second.first);
+        }
+    }
+    return readySockets;
+}
+
+void Select::add(fd_set* fdset, Socket* socket, bool own) {
+    const int fd = socket->socket_;
+    socketsMap_[fd] = {socket, own};
+
+    FD_SET(fd, fdset);
+    if (fd >= max_) {
+        max_ = fd + 1;
+    }
+}
+
+void Select::remove(fd_set* fdset, Socket* socket) {
+    const int fd = socket->socket_;
+    auto itr = socketsMap_.find(fd);
+    if (itr->second.second) {
+        delete itr->second.first;
+    }
+    socketsMap_.erase(itr);
+
+    FD_CLR(fd, fdset);
+    if (fd == max_ - 1) {
+        --max_;
+    }
+}
+
+bool Select::isAnySet(const fd_set* fdset) const {
+    fd_set emptySet;
+    FD_ZERO(&emptySet);
+    return std::memcmp(fdset, &emptySet, sizeof(fd_set));
 }
 
 } // namespace net

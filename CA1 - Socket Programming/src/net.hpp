@@ -1,10 +1,13 @@
 #ifndef NETWORK_HPP_INCLUDE
 #define NETWORK_HPP_INCLUDE
 
+#include <sys/select.h>
 #include <sys/socket.h>
 
 #include <array>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "endian.hpp"
 
@@ -101,6 +104,47 @@ private:
 
     static sockaddr_in ipToSockaddr(IpAddr addr, Port port);
     static void sockaddrToIp(sockaddr_in addrIn, IpAddr& outAddr, Port& outPort);
+};
+
+class Select {
+public:
+    Select();
+    ~Select();
+
+    void addRead(Socket* socket, bool own = true);
+    void addWrite(Socket* socket, bool own = true);
+    void addExcept(Socket* socket, bool own = true);
+
+    void removeRead(Socket* socket);
+    void removeWrite(Socket* socket);
+    void removeExcept(Socket* socket);
+
+    bool isInRead(const Socket* socket) const;
+    bool isInWrite(const Socket* socket) const;
+    bool isInExcept(const Socket* socket) const;
+
+    int select(int timeoutMs = -1);
+
+    bool isReadyRead(const Socket* socket) const;
+    bool isReadyWrite(const Socket* socket) const;
+    bool isReadyExcept(const Socket* socket) const;
+
+    std::vector<Socket*> getReadyRead() const;
+    std::vector<Socket*> getReadyWrite() const;
+    std::vector<Socket*> getReadyExcept() const;
+
+private:
+    int max_ = 0;
+    fd_set readMaster_, readWorking_;
+    fd_set writeMaster_, writeWorking_;
+    fd_set exceptMaster_, exceptWorking_;
+
+    std::unordered_map<int, std::pair<Socket*, bool>> socketsMap_;
+
+    std::vector<Socket*> getReady(const fd_set* fdset) const;
+    void add(fd_set* fdset, Socket* socket, bool own);
+    void remove(fd_set* fdset, Socket* socket);
+    bool isAnySet(const fd_set* fdset) const;
 };
 
 } // namespace net
