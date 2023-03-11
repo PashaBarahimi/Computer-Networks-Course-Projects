@@ -1,7 +1,7 @@
-// This is not part of the CLI library and is added by Pasha and Misagh to
-// handle the input from the user inside a command. This class makes it
-// possible to have a custom queue for the terminal to post the input from
-// the command handler instead of the scheduler.
+// This is not part of the CLI library and is added by
+// PashaBarahimi and MisaghM to handle user input inside a command.
+// This class can be used as a custom queue for the terminal to post
+// the input from the command handler (instead of posting to the CLI's scheduler).
 
 #ifndef CONCURRENT_QUEUE_H_
 #define CONCURRENT_QUEUE_H_

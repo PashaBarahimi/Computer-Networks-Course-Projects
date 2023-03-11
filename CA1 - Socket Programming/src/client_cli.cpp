@@ -21,7 +21,7 @@ ClientCLI::~ClientCLI() {
 void ClientCLI::run() {
     cli::LoopScheduler scheduler;
     session_ = new cli::CliLocalSession(*cli_, scheduler, std::cout, 200);
-    session_->ExitAction([&scheduler](auto& out) { scheduler.Stop(); });
+    session_->ExitAction([&scheduler](std::ostream& out) { scheduler.Stop(); });
     session_->SetCustomQueue(inputQueue_);
     scheduler.Run();
 }
@@ -30,9 +30,9 @@ void ClientCLI::setupCLI() {
     auto mainMenu = createMainMenu();
     cli_ = new cli::Cli(std::move(mainMenu));
     cli::SetColor();
-    cli_->EnterAction([](auto& out) { out << "Welcome to Hotel Misasha\n"; });
-    cli_->ExitAction([](auto& out) { out << "Thank you for using Hotel Misasha\n"; });
-    cli_->StdExceptionHandler([](auto& out, const auto& cmd, const auto& e) {
+    cli_->EnterAction([](std::ostream& out) { out << "Welcome to Hotel Misasha\n"; });
+    cli_->ExitAction([](std::ostream& out) { out << "Thank you for using Hotel Misasha\n"; });
+    cli_->StdExceptionHandler([](std::ostream& out, const std::string& cmd, const std::exception& e) {
         out << "Error: " << e.what() << std::endl;
     });
 }
@@ -43,17 +43,20 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
     loginMenu_.push_back(mainMenu->Insert(
         "signin", [this](std::ostream& out, const std::string& username) {
             std::string password;
-            if (!inputPassword(out, password, false))
+            if (!inputPassword(out, password, false)) {
                 return;
+            }
             out << client_.signin(username, password) << std::endl;
             checkMainMenuItems();
         },
         "Login (usage: signin <username>)"));
+
     loginMenu_.push_back(mainMenu->Insert(
         "signup", [this](std::ostream& out, const std::string& username) {
             bool userExists = client_.doesUserExist(username);
             if (userExists) {
                 out << "Username already exists." << std::endl;
+                return;
             }
             else {
                 out << "Username is available." << std::endl;
@@ -72,27 +75,32 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
             checkMainMenuItems();
         },
         "Signup (usage: signup <username>)"));
+
     userMenu_.push_back(mainMenu->Insert(
         "UserInfo", [this](std::ostream& out) {
             out << client_.userInfo() << std::endl;
             checkMainMenuItems();
         },
         "View user information (usage: UserInfo)"));
+
     userMenu_.push_back(mainMenu->Insert(
         "AllUsers", [this](std::ostream& out) {
             out << client_.allUsers() << std::endl;
             checkMainMenuItems();
         },
         "View all users (usage: AllUsers)"));
+
     userMenu_.push_back(mainMenu->Insert(
         "RoomsInfo", [this](std::ostream& out) {
             out << client_.roomsInfo() << std::endl;
             checkMainMenuItems();
         },
         "View rooms information (usage: RoomsInfo)"));
+
     userMenu_.push_back(mainMenu->Insert(std::move(createBookMenu(menuName))));
     userMenu_.push_back(mainMenu->Insert(std::move(createCancelMenu(menuName))));
     userMenu_.push_back(mainMenu->Insert(std::move(createPassDayMenu(menuName))));
+
     userMenu_.push_back(mainMenu->Insert(
         "EditInfo", [this](std::ostream& out) {
             std::string password, phone, email;
@@ -105,8 +113,10 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
             checkMainMenuItems();
         },
         "Edit user information (usage: EditInfo)"));
+
     userMenu_.push_back(mainMenu->Insert(std::move(createLeaveRoomMenu(menuName))));
     userMenu_.push_back(mainMenu->Insert(std::move(createRoomsMenu(menuName))));
+
     userMenu_.push_back(mainMenu->Insert(
         "Logout", [this](std::ostream& out) {
             out << client_.logout() << std::endl;
@@ -178,6 +188,7 @@ std::unique_ptr<cli::Menu> ClientCLI::createRoomsMenu(const std::string& parentN
             checkMainMenuItems();
         },
         "Add a room (usage: add <room number> <max capacity> <price>)");
+
     roomsMenu->Insert(
         "modify", [this, parentName](std::ostream& out, const std::string& roomNum, int newMaxCapacity, int newPrice) {
             out << client_.modifyRoom(roomNum, newMaxCapacity, newPrice) << std::endl;
@@ -185,6 +196,7 @@ std::unique_ptr<cli::Menu> ClientCLI::createRoomsMenu(const std::string& parentN
             checkMainMenuItems();
         },
         "Modify a room (usage: modify <room number> <new max capacity> <new price>)");
+
     roomsMenu->Insert(
         "remove", [this, parentName](std::ostream& out, const std::string& roomNum) {
             out << client_.removeRoom(roomNum) << std::endl;

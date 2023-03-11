@@ -47,7 +47,7 @@ class InputDevice
 public:
     using Handler = std::function< void( std::pair<KeyType,char> ) >;
 
-    explicit InputDevice(Scheduler& _scheduler) : scheduler(_scheduler), postToCustomQueue(false) {}
+    explicit InputDevice(Scheduler& _scheduler) : scheduler(_scheduler){}
     virtual ~InputDevice() = default;
 
     void SetCustomQueue(concurrent::Queue<std::pair<KeyType,char>>* q) { customQueue = q; }
@@ -73,8 +73,8 @@ private:
 
     Scheduler& scheduler;
     Handler handler;
-    concurrent::Queue<std::pair<KeyType,char>>* customQueue;
-    bool postToCustomQueue;
+    concurrent::Queue<std::pair<KeyType,char>>* customQueue = nullptr;
+    bool postToCustomQueue = false;
 };
 
 } // namespace detail
