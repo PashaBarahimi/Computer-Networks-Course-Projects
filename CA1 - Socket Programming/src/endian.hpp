@@ -1,3 +1,6 @@
+#ifndef ENDIAN_HPP_INCLUDE
+#define ENDIAN_HPP_INCLUDE
+
 #include <algorithm>
 #include <type_traits>
 
@@ -53,3 +56,5 @@ inline T swapOrder(T val) noexcept {
 }
 
 } // namespace byte
+
+#endif // ENDIAN_HPP_INCLUDE

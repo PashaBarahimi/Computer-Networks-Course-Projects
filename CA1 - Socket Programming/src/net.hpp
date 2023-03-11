@@ -1,5 +1,5 @@
-#ifndef NETWORK_HPP_INCLUDE
-#define NETWORK_HPP_INCLUDE
+#ifndef NET_HPP_INCLUDE
+#define NET_HPP_INCLUDE
 
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -149,4 +149,4 @@ private:
 
 } // namespace net
 
-#endif // NETWORK_HPP_INCLUDE
+#endif // NET_HPP_INCLUDE
