@@ -16,6 +16,8 @@ std::vector<std::string> split(const std::string& str, const std::string& delim)
 std::string toupper(const std::string& str);
 std::string tolower(const std::string& str);
 
+std::string random(int len);
+
 } // namespace strutils
 
 #endif // UTILS_HPP_INCLUDE

@@ -1,9 +1,9 @@
 #include "hotel.hpp"
 
 #include <algorithm>
-#include <random>
 
 #include "crypto.hpp"
+#include "strutils.hpp"
 
 Hotel::Hotel() {
     tokenCleaner_ = std::thread(&Hotel::cleanTokens, this);
@@ -20,7 +20,7 @@ std::string Hotel::generateTokenForUser(int userId) {
 
     std::lock_guard<std::mutex> lock(tokensMutex_);
     while (true) {
-        token = generateToken();
+        token = strutils::random(TOKEN_LENGTH);
         if (tokens_.find(token) == tokens_.end()) {
             break;
         }
@@ -29,23 +29,6 @@ std::string Hotel::generateTokenForUser(int userId) {
         userId,
         std::chrono::system_clock::now(),
     };
-    return token;
-}
-
-std::string Hotel::generateToken() {
-    static auto& chrs =
-        "0123456789"
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "!@#$%^&*()_+{}|:<>?,./;'[]\\-=";
-    thread_local static std::mt19937 rg{std::random_device{}()};
-    thread_local static std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
-
-    std::string token;
-    token.reserve(TOKEN_LENGTH);
-    while (token.size() < TOKEN_LENGTH) {
-        token += chrs[pick(rg)];
-    }
     return token;
 }
 

@@ -32,7 +32,6 @@ private:
     std::promise<void> tokenCleanerCancel_;
 
     std::string generateTokenForUser(int userId);
-    std::string generateToken();
     void removeExistingToken(int userId);
     void cleanTokens();
     int getUser(const std::string& token);
