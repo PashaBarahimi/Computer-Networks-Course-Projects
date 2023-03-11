@@ -1,11 +1,11 @@
 #include "client_cli.hpp"
 
+#include <cli/clilocalsession.h>
+#include <cli/loopscheduler.h>
+
 #include <ostream>
 #include <regex>
 #include <sstream>
-
-#include "cli/clilocalsession.h"
-#include "cli/loopscheduler.h"
 
 ClientCLI::ClientCLI(HotelClient& client) : client_(client) {
     inputQueue_ = new concurrent::Queue<std::pair<cli::detail::KeyType, char>>();

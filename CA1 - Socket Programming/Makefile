@@ -1,4 +1,5 @@
 PATH_SRC   := src
+PATH_LIB   := lib
 PATH_BUILD := build
 PATH_BIN   := bin
 PATH_OBJ   := $(PATH_BUILD)/obj
@@ -6,7 +7,8 @@ PATH_DEP   := $(PATH_BUILD)/dep
 
 include common_vars.mk
 
-LDLIBS += -lcryptopp
+LDLIBS   += -lcryptopp
+CPPFLAGS += -I $(PATH_LIB)
 
 EXE_SERVER := server
 EXE_CLIENT := client

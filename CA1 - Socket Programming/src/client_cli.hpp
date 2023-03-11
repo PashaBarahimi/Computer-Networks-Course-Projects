@@ -1,13 +1,14 @@
 #ifndef CLIENT_CLI_HPP_INCLUDE
 #define CLIENT_CLI_HPP_INCLUDE
 
+#include <cli/cli.h>
+#include <cli/clilocalsession.h>
+#include <cli/detail/concurrentqueue.h>
+#include <cli/loopscheduler.h>
+
 #include <string>
 #include <vector>
 
-#include "cli/cli.h"
-#include "cli/clilocalsession.h"
-#include "cli/detail/concurrentqueue.h"
-#include "cli/loopscheduler.h"
 #include "hotel_client.hpp"
 
 class ClientCLI {
