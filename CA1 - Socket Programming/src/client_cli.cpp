@@ -4,8 +4,6 @@
 #include <cli/loopscheduler.h>
 
 #include <ostream>
-#include <regex>
-#include <sstream>
 
 ClientCLI::ClientCLI(HotelClient& client) : client_(client) {
     inputQueue_ = new concurrent::Queue<std::pair<cli::detail::KeyType, char>>();
@@ -131,10 +129,6 @@ std::unique_ptr<cli::Menu> ClientCLI::createBookMenu(const std::string& parentNa
     auto bookMenu = std::make_unique<cli::Menu>("Book", "[book]");
     bookMenu->Insert(
         "book", [this, parentName](std::ostream& out, const std::string& roomNum, int numOfBeds, const std::string& checkInDate, const std::string& checkOutDate) {
-            if (!isDateValid(checkInDate) || !isDateValid(checkOutDate)) {
-                out << "Invalid date format." << std::endl;
-                return;
-            }
             out << client_.book(roomNum, numOfBeds, checkInDate, checkOutDate) << std::endl;
             session_->Feed(parentName);
             checkMainMenuItems();
@@ -268,33 +262,6 @@ bool ClientCLI::inputPassword(std::ostream& out, std::string& password, bool che
     std::string password2 = getInput(out, "Enter your password again: ", true, '*');
     if (password != password2) {
         out << "Passwords do not match." << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool ClientCLI::isDateValid(const std::string& date) {
-    std::regex dateRegex(R"((\d{4})-(\d{2})-(\d{2}))");
-    std::smatch match;
-    if (!std::regex_match(date, match, dateRegex)) {
-        return false;
-    }
-    int year = std::stoi(match[1]);
-    int month = std::stoi(match[2]);
-    int day = std::stoi(match[3]);
-    if (year < 1970 || year > 2100) {
-        return false;
-    }
-    if (month < 1 || month > 12) {
-        return false;
-    }
-    if (day < 1 || day > 31) {
-        return false;
-    }
-    if (month == 2 && day > 29) {
-        return false;
-    }
-    if ((month == 4 || month == 6 || month == 9 || month == 11) && day > 30) {
         return false;
     }
     return true;

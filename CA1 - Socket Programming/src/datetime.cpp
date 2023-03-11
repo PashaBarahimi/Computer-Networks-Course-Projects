@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <sstream>
 
-date::year_month_day DateTime::serverDate_ = date::year_month_day{date::floor<date::days>(std::chrono::system_clock::now())};
+date::year_month_day DateTime::serverDate_(date::floor<date::days>(std::chrono::system_clock::now()));
 
 std::string DateTime::getDateTime() {
     auto now = std::chrono::system_clock::now();
@@ -18,11 +18,19 @@ std::string DateTime::getServerDate() {
     return date::format("%F", serverDate_);
 }
 
-void DateTime::setServerDate(const std::string& date) {
+bool DateTime::setServerDate(const std::string& date) {
     std::istringstream ss(date);
     ss >> date::parse("%F", serverDate_);
+    return !ss.fail();
 }
 
 void DateTime::increaseServerDate(int days) {
     serverDate_ = date::sys_days(serverDate_) + date::days(days);
+}
+
+bool DateTime::isValid(const std::string& date) {
+    date::year_month_day ymd;
+    std::istringstream ss(date);
+    ss >> date::parse("%F", ymd);
+    return !ss.fail();
 }
