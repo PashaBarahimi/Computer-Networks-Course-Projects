@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -35,32 +36,32 @@ inline T ntoh(T in) {
     }
 }
 
-using Port = unsigned short;
+using Port = std::uint8_t;
 
 class IpAddr {
 public:
     IpAddr() = default;
-    IpAddr(unsigned short a, unsigned short b, unsigned short c, unsigned short d);
+    IpAddr(std::uint8_t a, std::uint8_t b, std::uint8_t c, std::uint8_t d);
     IpAddr(const std::string& addr);
     IpAddr(const char* addr);
-    explicit IpAddr(unsigned int addr);
+    explicit IpAddr(std::uint32_t addr);
 
-    unsigned short& operator[](int i);
-    unsigned short operator[](int i) const;
+    std::uint8_t& operator[](int i);
+    std::uint8_t operator[](int i) const;
 
     bool operator==(IpAddr rhs) const;
     bool operator!=(IpAddr lhs) const;
 
     std::string toStr() const;
-    unsigned int toInt() const;
+    std::uint32_t toInt() const;
     bool fromStr(const std::string& addr);
-    void fromInt(unsigned int addr);
+    void fromInt(std::uint32_t addr);
 
     static IpAddr any() { return IpAddr(0, 0, 0, 0); }
     static IpAddr loopback() { return IpAddr(127, 0, 0, 1); }
 
 private:
-    std::array<unsigned short, 4> addr_{};
+    std::array<std::uint8_t, 4> addr_{};
 };
 
 class Socket {

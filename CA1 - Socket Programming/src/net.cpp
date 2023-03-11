@@ -9,7 +9,7 @@
 
 namespace net {
 
-IpAddr::IpAddr(unsigned short a, unsigned short b, unsigned short c, unsigned short d)
+IpAddr::IpAddr(std::uint8_t a, std::uint8_t b, std::uint8_t c, std::uint8_t d)
     : addr_{a, b, c, d} {}
 
 IpAddr::IpAddr(const std::string& addr) {
@@ -19,12 +19,12 @@ IpAddr::IpAddr(const std::string& addr) {
 IpAddr::IpAddr(const char* addr)
     : IpAddr(std::string(addr)) {}
 
-IpAddr::IpAddr(unsigned int addr) {
+IpAddr::IpAddr(std::uint32_t addr) {
     fromInt(addr);
 }
 
-unsigned short& IpAddr::operator[](int i) { return addr_[i]; }
-unsigned short IpAddr::operator[](int i) const { return addr_[i]; }
+std::uint8_t& IpAddr::operator[](int i) { return addr_[i]; }
+std::uint8_t IpAddr::operator[](int i) const { return addr_[i]; }
 
 bool IpAddr::operator==(IpAddr rhs) const { return addr_ == rhs.addr_; }
 bool IpAddr::operator!=(IpAddr lhs) const { return addr_ != lhs.addr_; }
@@ -35,8 +35,8 @@ std::string IpAddr::toStr() const {
     return sstr.str();
 }
 
-unsigned int IpAddr::toInt() const {
-    unsigned int res = 0;
+std::uint32_t IpAddr::toInt() const {
+    std::uint32_t res = 0;
     for (int i = 0; i < 4; ++i) {
         res |= addr_[i] << ((3 - i) * 8);
     }
@@ -61,7 +61,7 @@ bool IpAddr::fromStr(const std::string& addr) {
     return true;
 }
 
-void IpAddr::fromInt(unsigned int addr) {
+void IpAddr::fromInt(std::uint32_t addr) {
     for (int i = 0; i < 4; ++i) {
         addr_[i] = (addr >> ((3 - i) * 8)) & 0xFF;
     }
