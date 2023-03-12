@@ -38,7 +38,6 @@ private:
     std::string getInput(std::ostream& out, const std::string& inputMsg, bool hidden = false, char mask = '*');
     void checkMainMenuItems();
     bool inputPassword(std::ostream& out, std::string& password, bool check = true);
-    bool isDateValid(const std::string& date);
 };
 
 #endif // CLIENT_CLI_HPP_INCLUDE

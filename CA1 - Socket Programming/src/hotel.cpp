@@ -1,16 +1,17 @@
 #include "hotel.hpp"
 
 #include <algorithm>
-#include <random>
 
 #include "crypto.hpp"
+#include "strutils.hpp"
 
 Hotel::Hotel() {
     tokenCleaner_ = std::thread(&Hotel::cleanTokens, this);
 }
 
 Hotel::~Hotel() {
-    tokenCleanerCancel_.set_value();
+    tokenCancel_ = true;
+    tokenCleanerCancel_.notify_one();
     tokenCleaner_.join();
 }
 
@@ -20,7 +21,7 @@ std::string Hotel::generateTokenForUser(int userId) {
 
     std::lock_guard<std::mutex> lock(tokensMutex_);
     while (true) {
-        token = generateToken();
+        token = strutils::random(TOKEN_LENGTH);
         if (tokens_.find(token) == tokens_.end()) {
             break;
         }
@@ -29,23 +30,6 @@ std::string Hotel::generateTokenForUser(int userId) {
         userId,
         std::chrono::system_clock::now(),
     };
-    return token;
-}
-
-std::string Hotel::generateToken() {
-    static auto& chrs =
-        "0123456789"
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "!@#$%^&*()_+{}|:<>?,./;'[]\\-=";
-    thread_local static std::mt19937 rg{std::random_device{}()};
-    thread_local static std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
-
-    std::string token;
-    token.reserve(TOKEN_LENGTH);
-    while (token.size() < TOKEN_LENGTH) {
-        token += chrs[pick(rg)];
-    }
     return token;
 }
 
@@ -60,8 +44,13 @@ void Hotel::removeExistingToken(int userId) {
 }
 
 void Hotel::cleanTokens() {
-    while (tokenCleanerCancel_.get_future().wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
-        tokensMutex_.lock();
+    const std::chrono::minutes waitTime(1);
+    while (true) {
+        std::unique_lock<std::mutex> guard(tokensMutex_);
+        if (tokenCleanerCancel_.wait_for(guard, waitTime, [this]() { return this->tokenCancel_; })) {
+            break;
+        }
+
         for (auto it = tokens_.begin(); it != tokens_.end();) {
             if (std::chrono::system_clock::now() - it->second.lastAccess > TOKEN_LIFETIME) {
                 it = tokens_.erase(it);
@@ -70,8 +59,6 @@ void Hotel::cleanTokens() {
                 ++it;
             }
         }
-        tokensMutex_.unlock();
-        std::this_thread::sleep_for(std::chrono::minutes(10));
     }
 }
 
