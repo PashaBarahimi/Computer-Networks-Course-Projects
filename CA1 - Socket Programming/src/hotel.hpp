@@ -2,7 +2,7 @@
 #define HOTEL_HPP_INCLUDE
 
 #include <chrono>
-#include <future>
+#include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
@@ -29,7 +29,8 @@ private:
     std::unordered_map<std::string, UserAccess> tokens_;
     std::mutex tokensMutex_;
     std::thread tokenCleaner_;
-    std::promise<void> tokenCleanerCancel_;
+    std::condition_variable tokenCleanerCancel_;
+    bool tokenCancel_ = false;
 
     std::string generateTokenForUser(int userId);
     void removeExistingToken(int userId);

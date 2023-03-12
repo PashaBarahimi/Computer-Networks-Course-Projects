@@ -10,7 +10,8 @@ Hotel::Hotel() {
 }
 
 Hotel::~Hotel() {
-    tokenCleanerCancel_.set_value();
+    tokenCancel_ = true;
+    tokenCleanerCancel_.notify_one();
     tokenCleaner_.join();
 }
 
@@ -43,8 +44,13 @@ void Hotel::removeExistingToken(int userId) {
 }
 
 void Hotel::cleanTokens() {
-    while (tokenCleanerCancel_.get_future().wait_for(std::chrono::seconds(1)) == std::future_status::timeout) {
-        tokensMutex_.lock();
+    const std::chrono::minutes waitTime(1);
+    while (true) {
+        std::unique_lock<std::mutex> guard(tokensMutex_);
+        if (tokenCleanerCancel_.wait_for(guard, waitTime, [this]() { return this->tokenCancel_; })) {
+            break;
+        }
+
         for (auto it = tokens_.begin(); it != tokens_.end();) {
             if (std::chrono::system_clock::now() - it->second.lastAccess > TOKEN_LIFETIME) {
                 it = tokens_.erase(it);
@@ -53,8 +59,6 @@ void Hotel::cleanTokens() {
                 ++it;
             }
         }
-        tokensMutex_.unlock();
-        std::this_thread::sleep_for(std::chrono::minutes(10));
     }
 }
 
