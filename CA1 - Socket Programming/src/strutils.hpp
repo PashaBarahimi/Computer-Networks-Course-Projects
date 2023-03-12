@@ -1,5 +1,5 @@
-#ifndef UTILS_HPP_INCLUDE
-#define UTILS_HPP_INCLUDE
+#ifndef STRUTILS_HPP_INCLUDE
+#define STRUTILS_HPP_INCLUDE
 
 #include <string>
 #include <vector>
@@ -20,4 +20,4 @@ std::string random(int len);
 
 } // namespace strutils
 
-#endif // UTILS_HPP_INCLUDE
+#endif // STRUTILS_HPP_INCLUDE
