@@ -14,6 +14,7 @@ public:
     static void increaseServerDate(int days = 1);
 
     static bool isValid(const std::string& date);
+    static bool parse(const std::string& date, date::year_month_day& res);
 
 private:
     static date::year_month_day serverDate_;
