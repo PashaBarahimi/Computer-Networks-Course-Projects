@@ -19,9 +19,7 @@ std::string DateTime::getServerDate() {
 }
 
 bool DateTime::setServerDate(const std::string& date) {
-    std::istringstream ss(date);
-    ss >> date::parse("%F", serverDate_);
-    return !ss.fail();
+    return parse(date, serverDate_);
 }
 
 void DateTime::increaseServerDate(int days) {
@@ -30,7 +28,20 @@ void DateTime::increaseServerDate(int days) {
 
 bool DateTime::isValid(const std::string& date) {
     date::year_month_day ymd;
+    return parse(date, ymd);
+}
+
+bool DateTime::parse(const std::string& date, date::year_month_day& res) {
+    date::year_month_day ymd;
     std::istringstream ss(date);
     ss >> date::parse("%F", ymd);
-    return !ss.fail();
+    if (ss.fail()) {
+        return false;
+    }
+    std::string str;
+    if (ss >> str) {
+        return false;
+    }
+    res = ymd;
+    return true;
 }
