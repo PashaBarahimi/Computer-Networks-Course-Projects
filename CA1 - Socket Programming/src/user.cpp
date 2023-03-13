@@ -16,6 +16,14 @@ void User::editInfo(const std::string& newPassword, const std::string& newPhoneN
     address_ = newAddress;
 }
 
+void User::increaseBalance(int amount) {
+    balance_ += amount;
+}
+
+void User::decreaseBalance(int amount) {
+    balance_ -= amount;
+}
+
 bool User::isPasswordCorrect(const std::string& hashedPassword) const {
     return password_ == hashedPassword;
 }
@@ -30,4 +38,27 @@ int User::getId() const {
 
 std::string User::getUsername() const {
     return username_;
+}
+
+int User::getBalance() const {
+    return balance_;
+}
+
+nlohmann::json User::toJson(bool includePassword) const {
+    nlohmann::json j;
+    j["id"] = id_;
+    j["name"] = username_;
+    if (includePassword) {
+        j["password"] = password_;
+    }
+    if (role_ == Role::Admin) {
+        j["admin"] = true;
+    }
+    else {
+        j["admin"] = false;
+        j["balance"] = balance_;
+        j["phoneNumber"] = phoneNumber_;
+        j["address"] = address_;
+    }
+    return j;
 }

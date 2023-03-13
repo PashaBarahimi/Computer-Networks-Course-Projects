@@ -1,6 +1,7 @@
 #ifndef USER_HPP_INCLUDE
 #define USER_HPP_INCLUDE
 
+#include <json.hpp>
 #include <string>
 
 class User {
@@ -14,11 +15,15 @@ public:
          int balance = 0, std::string phoneNumber = "", std::string address = "");
 
     void editInfo(const std::string& newPassword, const std::string& newPhoneNumber, const std::string& newAddress);
+    void increaseBalance(int amount);
+    void decreaseBalance(int amount);
 
     bool isPasswordCorrect(const std::string& hashedPassword) const;
     Role getRole() const;
     int getId() const;
     std::string getUsername() const;
+    int getBalance() const;
+    nlohmann::json toJson(bool includePassword = true) const;
 
 private:
     int id_;
