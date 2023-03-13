@@ -15,6 +15,7 @@ public:
 
     static bool isValid(const std::string& date);
     static bool parse(const std::string& date, date::year_month_day& res);
+    static int compare(const std::string& lhs, const std::string& rhs);
 
 private:
     static date::year_month_day serverDate_;

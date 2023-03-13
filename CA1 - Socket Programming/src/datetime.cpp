@@ -45,3 +45,14 @@ bool DateTime::parse(const std::string& date, date::year_month_day& res) {
     res = ymd;
     return true;
 }
+
+int DateTime::compare(const std::string& lhs, const std::string& rhs) {
+    date::year_month_day ymd1, ymd2;
+    if (!parse(lhs, ymd1) || !parse(rhs, ymd2)) {
+        return 0;
+    }
+    if (ymd1 == ymd2) {
+        return 0;
+    }
+    return ymd1 < ymd2 ? -1 : 1;
+}
