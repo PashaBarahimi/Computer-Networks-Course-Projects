@@ -2,7 +2,7 @@
     "rooms": [
         {
             "number": "101",
-            "status": 0,
+            "isFull": false,
             "price": 100,
             "maxCapacity": 2,
             "capacity": 2,
@@ -10,7 +10,7 @@
         },
         {
             "number": "102",
-            "status": 0,
+            "isFull": false,
             "price": 73,
             "maxCapacity": 3,
             "capacity": 2,
@@ -18,14 +18,14 @@
                 {
                     "id": 1,
                     "numOfBeds": 1,
-                    "reserveDate": "25-02-2023",
-                    "checkoutDate": "27-02-2023"
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-27"
                 }
             ]
         },
         {
             "number": "201",
-            "status": 1,
+            "isFull": true,
             "price": 100,
             "maxCapacity": 2,
             "capacity": 0,
@@ -33,14 +33,14 @@
                 {
                     "id": 2,
                     "numOfBeds": 2,
-                    "reserveDate": "25-02-2023",
-                    "checkoutDate": "27-02-2023"
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-27"
                 }
             ]
         },
         {
             "number": "301",
-            "status": 0,
+            "isFull": false,
             "price": 100,
             "maxCapacity": 1,
             "capacity": 0,
@@ -48,14 +48,14 @@
                 {
                     "id": 2,
                     "numOfBeds": 1,
-                    "reserveDate": "27-02-2023",
-                    "checkoutDate": "28-02-2023"
+                    "checkInDate": "2023-02-27",
+                    "checkOutDate": "2023-02-28"
                 },
                 {
                     "id": 3,
                     "numOfBeds": 1,
-                    "reserveDate": "25-02-2023",
-                    "checkoutDate": "26-02-2023"
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-26"
                 }
             ]
         }
