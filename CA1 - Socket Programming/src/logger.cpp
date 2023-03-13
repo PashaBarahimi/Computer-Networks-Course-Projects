@@ -21,7 +21,7 @@ Logger::Logger(Logger::Level level, std::ofstream& file)
       isaTTY_(false) {}
 
 void Logger::info(const std::string& message,
-                  const std::string& messageCode,
+                  int messageCode,
                   const std::string& action,
                   const std::unordered_map<std::string, std::string>& details) {
     if (level_ <= Level::Info) {
@@ -30,7 +30,7 @@ void Logger::info(const std::string& message,
 }
 
 void Logger::warn(const std::string& message,
-                  const std::string& messageCode,
+                  int messageCode,
                   const std::string& action,
                   const std::unordered_map<std::string, std::string>& details) {
     if (level_ <= Level::Warning) {
@@ -39,7 +39,7 @@ void Logger::warn(const std::string& message,
 }
 
 void Logger::error(const std::string& message,
-                   const std::string& messageCode,
+                   int messageCode,
                    const std::string& action,
                    const std::unordered_map<std::string, std::string>& details) {
     if (level_ <= Level::Error) {
@@ -49,7 +49,7 @@ void Logger::error(const std::string& message,
 
 void Logger::log(Level level,
                  const std::string& message,
-                 const std::string& messageCode,
+                 int messageCode,
                  const std::string& action,
                  const std::unordered_map<std::string, std::string>& details) {
     if (!isaTTY_) {
@@ -57,7 +57,7 @@ void Logger::log(Level level,
     }
     else {
         stream_ << levelToString(level) << ' ';
-        if (!messageCode.empty()) {
+        if (messageCode != -1) {
             stream_ << '{' << messageCode << "} ";
         }
         stream_ << message << std::endl;
@@ -66,13 +66,13 @@ void Logger::log(Level level,
 
 void Logger::logJson(Level level,
                      const std::string& message,
-                     const std::string& messageCode,
+                     int messageCode,
                      const std::string& action,
                      const std::unordered_map<std::string, std::string>& details) {
     nlohmann::json json;
     json["level"] = levelToString(level, true);
     json["message"] = message;
-    if (!messageCode.empty()) {
+    if (messageCode != -1) {
         json["messageCode"] = messageCode;
     }
     if (!action.empty()) {

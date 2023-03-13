@@ -17,15 +17,15 @@ public:
     Logger(Level level, std::ofstream& file);
 
     void info(const std::string& message,
-              const std::string& messageCode = "",
+              int messageCode = -1,
               const std::string& action = "",
               const std::unordered_map<std::string, std::string>& details = {});
     void warn(const std::string& message,
-              const std::string& messageCode = "",
+              int messageCode = -1,
               const std::string& action = "",
               const std::unordered_map<std::string, std::string>& details = {});
     void error(const std::string& message,
-               const std::string& messageCode = "",
+               int messageCode = -1,
                const std::string& action = "",
                const std::unordered_map<std::string, std::string>& details = {});
 
@@ -36,12 +36,12 @@ private:
 
     void log(Level level,
              const std::string& message,
-             const std::string& messageCode,
+             int messageCode,
              const std::string& action,
              const std::unordered_map<std::string, std::string>& details);
     void logJson(Level level,
                  const std::string& message,
-                 const std::string& messageCode,
+                 int messageCode,
                  const std::string& action,
                  const std::unordered_map<std::string, std::string>& details);
     std::string levelToString(Level level, bool isJson = false);
