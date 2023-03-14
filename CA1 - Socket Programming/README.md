@@ -85,7 +85,7 @@ The logger is able to log the following information:
 
 Also, the logger will always include the following information in the log message:
 - **Timestamp**: The timestamp of the log message.
-- **ServerDate**: The date of the server.
+- **Server Date**: The date of the server.
 
 > It is important to note that the logger will log the above information only when the logger is used to log to a file. When the logger is used to log to the console, only the following information will be logged:  
 > - **Level**
@@ -144,7 +144,45 @@ jq '.[] | select(.level == "error")' log.json
 
 ### DateTime
 
+DateTime is a static class that is used to get the current date and time. The following API is provided for the DateTime class:
+
+```cpp
+class DateTime {
+public:
+    static std::string getDateTime();
+    static std::string getServerDate();
+
+    static bool setServerDate(const std::string& date);
+    static void increaseServerDate(int days = 1);
+
+    static bool isValid(const std::string& date);
+    static bool parse(const std::string& date, date::year_month_day& res);
+    static int compare(const std::string& lhs, const std::string& rhs);
+};
+```
+
+This class uses the [HowardHinnant/date](https://github.com/HowardHinnant/date) library to store the date in `date::year_month_day` struct. This library is added to `chrono` in C++20.  
+It is important to note that all of the functions provided by the DateTime class require the date to be in the format `YYYY-MM-DD` which is the ISO 8601 format. This is different from the project requirements which require the date to be in the format `DD-MM-YYYY`.
+
 ### Crypto
+
+The `crypto` namespace contains the following functions which are wrappers for the functions provided by the [Crypto++](https://www.cryptopp.com/) library:
+
+```cpp
+namespace crypto {
+
+std::string SHA256(const std::string& input);
+std::string base64Encode(const std::string& input);
+std::string base64Decode(const std::string& encoded);
+
+} // namespace crypto
+```
+
+The use cases for these functions are:
+
+- **SHA256**: Used to hash the password of the user. The hashed password is stored in the JSON file instead of the plain text password to prevent the password from being stolen.
+- **base64Encode**: Used to encode the password of the user before sending it to the server.
+- **base64Decode**: Used to decode the password of the user after receiving it in the server.
 
 ### JSON
 
