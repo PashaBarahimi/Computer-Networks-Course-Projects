@@ -19,10 +19,12 @@ public:
     void decreaseBalance(int amount);
 
     bool isPasswordCorrect(const std::string& hashedPassword) const;
+
     Role getRole() const;
     int getId() const;
     std::string getUsername() const;
     int getBalance() const;
+
     nlohmann::json toJson(bool includePassword = true) const;
 
 private:

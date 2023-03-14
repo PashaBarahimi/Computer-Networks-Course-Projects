@@ -8,16 +8,18 @@ class Room {
 public:
     Room(std::string num, int price, int maxCapacity);
 
+    void modify(int newPrice, int newMaxCapacity);
+
     std::string getNumber() const;
     int getPrice() const;
     int getMaxCapacity() const;
-    nlohmann::json toJson() const;
 
-    void modify(int newPrice, int newMaxCapacity);
+    nlohmann::json toJson() const;
 
 private:
     std::string number_;
     int price_;
     int maxCapacity_;
 };
-#endif
+
+#endif // ROOM_HPP_INCLUDE

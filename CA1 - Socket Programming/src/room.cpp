@@ -5,17 +5,14 @@ Room::Room(std::string num, int price, int maxCapacity)
       price_(price),
       maxCapacity_(maxCapacity) {}
 
-std::string Room::getNumber() const {
-    return number_;
+void Room::modify(int newPrice, int newMaxCapacity) {
+    price_ = newPrice;
+    maxCapacity_ = newMaxCapacity;
 }
 
-int Room::getPrice() const {
-    return price_;
-}
-
-int Room::getMaxCapacity() const {
-    return maxCapacity_;
-}
+std::string Room::getNumber() const { return number_; }
+int Room::getPrice() const { return price_; }
+int Room::getMaxCapacity() const { return maxCapacity_; }
 
 nlohmann::json Room::toJson() const {
     return {
@@ -23,9 +20,4 @@ nlohmann::json Room::toJson() const {
         {"price", price_},
         {"maxCapacity", maxCapacity_},
     };
-}
-
-void Room::modify(int newPrice, int newMaxCapacity) {
-    price_ = newPrice;
-    maxCapacity_ = newMaxCapacity;
 }

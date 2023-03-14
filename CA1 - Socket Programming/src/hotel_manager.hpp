@@ -24,12 +24,12 @@ constexpr int TOKEN_LENGTH = 32;
 constexpr std::chrono::minutes TOKEN_LIFETIME(30);
 
 const std::string LOG_FILE = "misasha.log";
-const std::string USERS_FILE = "bin/data/usersinfo.json";
-const std::string ROOMS_FILE = "bin/data/roomsinfo.json";
+const std::string USERS_FILE = "data/usersinfo.json";
+const std::string ROOMS_FILE = "data/roomsinfo.json";
 
 class HotelManager {
 public:
-    HotelManager(std::string ip, int port);
+    HotelManager(net::IpAddr ip, net::Port port);
     ~HotelManager();
 
     void run();
@@ -40,8 +40,8 @@ private:
         std::chrono::system_clock::time_point lastAccess;
     };
 
-    std::string ip_;
-    int port_;
+    net::IpAddr ip_;
+    net::Port port_;
     std::ofstream logFile_;
     Logger logger_;
     net::Socket socket_;

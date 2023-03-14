@@ -15,10 +15,14 @@ public:
     int getUserId() const;
     int getNumOfBeds() const;
     date::year_month_day getCheckOut() const;
-    bool hasConflict(const date::year_month_day& date) const;
-    bool isExpired(const date::year_month_day& date) const;
-    bool canBeCancelled(const date::year_month_day& date) const;
+
+    bool hasConflict(date::year_month_day date) const;
+    bool isExpired(date::year_month_day date) const;
+    bool canBeCancelled(date::year_month_day date) const;
+
     bool operator==(const Reservation& other) const;
+    bool operator!=(const Reservation& other) const;
+
     nlohmann::json toJson() const;
 
 private:
@@ -27,4 +31,4 @@ private:
     date::year_month_day checkIn_, checkOut_;
 };
 
-#endif
+#endif // RESERVATION_HPP_INCLUDE

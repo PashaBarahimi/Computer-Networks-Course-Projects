@@ -7,8 +7,8 @@
 #include "datetime.hpp"
 #include "strutils.hpp"
 
-HotelManager::HotelManager(std::string ip, int port)
-    : ip_(std::move(ip)),
+HotelManager::HotelManager(net::IpAddr ip, net::Port port)
+    : ip_(ip),
       port_(port),
       logFile_(LOG_FILE, std::ios::app),
       logger_(Logger::Level::Info, logFile_) {

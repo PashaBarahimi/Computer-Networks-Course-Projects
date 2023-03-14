@@ -10,32 +10,31 @@ void Reservation::modify(int numOfBeds) {
     numOfBeds_ = numOfBeds;
 }
 
-int Reservation::getNumOfBeds() const {
-    return numOfBeds_;
-}
+int Reservation::getNumOfBeds() const { return numOfBeds_; }
+int Reservation::getUserId() const { return userId_; }
+date::year_month_day Reservation::getCheckOut() const { return checkOut_; }
 
-int Reservation::getUserId() const {
-    return userId_;
-}
-
-date::year_month_day Reservation::getCheckOut() const {
-    return checkOut_;
-}
-
-bool Reservation::hasConflict(const date::year_month_day& date) const {
+bool Reservation::hasConflict(date::year_month_day date) const {
     return date >= checkIn_ && date < checkOut_;
 }
 
-bool Reservation::isExpired(const date::year_month_day& date) const {
+bool Reservation::isExpired(date::year_month_day date) const {
     return checkOut_ <= date;
 }
 
-bool Reservation::canBeCancelled(const date::year_month_day& date) const {
+bool Reservation::canBeCancelled(date::year_month_day date) const {
     return date < checkIn_;
 }
 
-bool Reservation::operator==(const Reservation& other) const {
-    return userId_ == other.userId_ && numOfBeds_ == other.numOfBeds_ && checkIn_ == other.checkIn_ && checkOut_ == other.checkOut_;
+bool Reservation::operator==(const Reservation& rhs) const {
+    return userId_ == rhs.userId_ &&
+           numOfBeds_ == rhs.numOfBeds_ &&
+           checkIn_ == rhs.checkIn_ &&
+           checkOut_ == rhs.checkOut_;
+}
+
+bool Reservation::operator!=(const Reservation& rhs) const {
+    return !(*this == rhs);
 }
 
 nlohmann::json Reservation::toJson() const {

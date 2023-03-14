@@ -28,21 +28,10 @@ bool User::isPasswordCorrect(const std::string& hashedPassword) const {
     return password_ == hashedPassword;
 }
 
-User::Role User::getRole() const {
-    return role_;
-}
-
-int User::getId() const {
-    return id_;
-}
-
-std::string User::getUsername() const {
-    return username_;
-}
-
-int User::getBalance() const {
-    return balance_;
-}
+User::Role User::getRole() const { return role_; }
+int User::getId() const { return id_; }
+std::string User::getUsername() const { return username_; }
+int User::getBalance() const { return balance_; }
 
 nlohmann::json User::toJson(bool includePassword) const {
     nlohmann::json j;
