@@ -186,6 +186,17 @@ The use cases for these functions are:
 
 ### JSON
 
+The project requires the use of JSON files in the following cases:
+
+- **Users**: The users information is stored in a JSON file.
+- **Rooms**: The rooms information is stored in a JSON file.
+- **Config**: The configuration of the server is stored in a JSON file.
+- **Logs**: The logs are stored in a JSON file.
+- **Request**: The requests sent by the client are in JSON format.
+- **Response**: The responses sent by the server are in JSON format.
+
+All of the JSON data and files are formatted and parsed using the [nlohmann/json](https://github.com/nlohmann/json) library.
+
 ### Client
 
 #### CLI
@@ -193,6 +204,12 @@ The use cases for these functions are:
 ### Server
 
 #### Authentication
+
+When a user signs up, the server will hash the password using the `SHA256` algorithm and store the hashed password in the JSON file. This process is done to prevent the misuse of the password in case the JSON file is accessed by an unauthorized person.  
+When a user signs in, the server will hash the password using the `SHA256` algorithm and compare it with the hashed password that is stored in the JSON file. If the two passwords match, the user will be authenticated and the server will generate a token for the user. This token will be used to authenticate the user in the future requests. The token length is 32 characters and can contain any character from the following set: `[a-zA-Z0-9]-_`.
+
+The token should be stored in the client side and sent in the `token` field of the request. Otherwise, the server will consider the request as an unauthorized request and will return an error response if the request requires authentication.  
+The token will expire after 30 minutes. However, the expiration time is reset every time the user sends a request to the server. This means that the user will have to sign in again only if the user does not send any request to the server for 30 minutes.
 
 #### User
 
