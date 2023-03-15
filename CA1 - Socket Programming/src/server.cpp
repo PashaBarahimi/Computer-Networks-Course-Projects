@@ -14,24 +14,50 @@ std::pair<net::IpAddr, net::Port> getServerConfig() {
         throw std::runtime_error("Cannot open config file");
     }
     nlohmann::json j;
-    config >> j;
-    return {j["hostname"], j["port"]};
+    try {
+        config >> j;
+        std::string hostname = j["hostname"];
+        int port = j["port"];
+        return {hostname, port};
+    }
+    catch (const nlohmann::json::parse_error& e) {
+        std::cout << "Failed to parse config file" << std::endl;
+    }
+    catch (const nlohmann::json::out_of_range& e) {
+        std::cout << "Invalid config" << std::endl;
+    }
+    catch (const nlohmann::json::type_error& e) {
+        std::cout << "Invalid config" << std::endl;
+    }
+    return {net::IpAddr::loopback(), 8000};
 }
 
 int main() {
-    std::cout << "Please enter the date in the format of YYYY-MM-DD: ";
-    std::string date;
-    std::cin >> date;
+    while (true) {
+        std::cout << "Please enter the date in the format of YYYY-MM-DD: ";
+        std::string dateStr;
+        std::cin >> dateStr;
 
-    if (DateTime::setServerDate(date)) {
-        std::cout << "The server date is set to " << DateTime::getServerDate() << std::endl;
-    }
-    else {
-        std::cout << "Invalid date" << std::endl;
+        date::year_month_day date;
+        if (!DateTime::parse(dateStr, date)) {
+            std::cout << "Invalid date." << std::endl;
+        }
+        else {
+            DateTime::setServerDate(date);
+            std::cout << "The server date is set to: "
+                      << DateTime::toStr(DateTime::getServerDate()) << std::endl;
+            break;
+        }
     }
 
     auto config = getServerConfig();
-    HotelManager manager(config.first, config.second);
-    manager.run();
+    try {
+        HotelManager manager(config.first, config.second);
+        manager.run();
+    }
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return 1;
+    }
     return 0;
 }

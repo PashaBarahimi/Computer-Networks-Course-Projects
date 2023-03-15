@@ -6,6 +6,7 @@
 
 class Room {
 public:
+    Room() = default;
     Room(std::string num, int price, int maxCapacity);
 
     void modify(int newPrice, int newMaxCapacity);

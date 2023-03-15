@@ -1,10 +1,10 @@
 #ifndef RESERVATION_HPP_INCLUDE
 #define RESERVATION_HPP_INCLUDE
 
-#include <date.h>
-
 #include <json.hpp>
 #include <string>
+
+#include "datetime.hpp"
 
 class Reservation {
 public:

@@ -41,7 +41,7 @@ nlohmann::json Reservation::toJson() const {
     return {
         {"id", userId_},
         {"numOfBeds", numOfBeds_},
-        {"checkInDate", date::format("%F", checkIn_)},
-        {"checkOutDate", date::format("%F", checkOut_)},
+        {"checkInDate", DateTime::toStr(checkIn_)},
+        {"checkOutDate", DateTime::toStr(checkOut_)},
     };
 }

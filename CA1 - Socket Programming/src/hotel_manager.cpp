@@ -2,10 +2,14 @@
 
 #include <algorithm>
 #include <functional>
+#include <iomanip>
 
 #include "crypto.hpp"
 #include "datetime.hpp"
+#include "status_code.hpp"
 #include "strutils.hpp"
+
+using namespace std::string_literals;
 
 HotelManager::HotelManager(net::IpAddr ip, net::Port port)
     : ip_(ip),
@@ -25,7 +29,7 @@ HotelManager::~HotelManager() {
 
 void HotelManager::run() {
     setupServer();
-    logger_.info("Server started", -1, "run");
+    logger_.info("Server started", __func__);
     handleConnections();
 }
 
@@ -38,18 +42,19 @@ void HotelManager::loadUsers() {
     try {
         file >> users;
     }
-    catch (const std::exception& e) {
-        throw std::runtime_error("Failed to parse users file: " + std::string(e.what()));
+    catch (const nlohmann::json::parse_error& e) {
+        throw std::runtime_error("Failed to parse users file: "s + e.what());
     }
-    for (const auto& user : users) {
+
+    for (const auto& user : users["users"]) {
         int id = user["id"];
         std::string username = user["user"];
         std::string password = user["password"];
         bool isAdmin = user["admin"];
-        int balanace;
+        int balance;
         std::string phone, address;
         if (user.contains("balance")) {
-            balanace = user["balance"];
+            balance = user["balance"];
         }
         if (user.contains("phone")) {
             phone = user["phone"];
@@ -57,9 +62,9 @@ void HotelManager::loadUsers() {
         if (user.contains("address")) {
             address = user["address"];
         }
-        users_.emplace_back(id, username, password, isAdmin ? User::Role::Admin : User::Role::User, balanace, phone, address);
+        users_.emplace_back(id, username, password, isAdmin ? User::Role::Admin : User::Role::User, balance, phone, address);
     }
-    logger_.info("Loaded " + std::to_string(users_.size()) + " users", -1, "loadUsers");
+    logger_.info("Loaded " + std::to_string(users_.size()) + " users", __func__);
 }
 
 void HotelManager::loadRooms() {
@@ -72,9 +77,10 @@ void HotelManager::loadRooms() {
         file >> rooms;
     }
     catch (const std::exception& e) {
-        throw std::runtime_error("Failed to parse rooms file: " + std::string(e.what()));
+        throw std::runtime_error("Failed to parse rooms file: "s + e.what());
     }
-    for (const auto& room : rooms) {
+
+    for (const auto& room : rooms["rooms"]) {
         std::string roomNum = room["number"];
         int price = room["price"];
         int maxCapacity = room["maxCapacity"];
@@ -84,24 +90,22 @@ void HotelManager::loadRooms() {
             int userId = reservation["id"];
             int numOfBeds = reservation["numOfBeds"];
             std::string checkIn = reservation["checkInDate"];
-            std::string checkOut = reservation["checkOuDate"];
+            std::string checkOut = reservation["checkOutDate"];
             date::year_month_day checkInDate, checkOutDate;
             DateTime::parse(checkIn, checkInDate);
             DateTime::parse(checkOut, checkOutDate);
             reservations_[roomNum].emplace_back(userId, numOfBeds, checkInDate, checkOutDate);
         }
     }
-    logger_.info("Loaded " + std::to_string(rooms_.size()) + " rooms", -1, "loadRooms");
+    logger_.info("Loaded " + std::to_string(rooms_.size()) + " rooms", __func__);
 }
 
 void HotelManager::setupServer() {
     socket_ = net::Socket(net::Socket::Type::stream);
-    bool res = socket_.bind(ip_, port_);
-    if (!res) {
+    if (!socket_.bind(ip_, port_)) {
         throw std::runtime_error("Failed to bind socket, port already in use");
     }
-    res = socket_.listen(10);
-    if (!res) {
+    if (!socket_.listen(10)) {
         throw std::runtime_error("Failed to listen on socket");
     }
 }
@@ -118,7 +122,7 @@ void HotelManager::handleConnections() {
             if (*sock == socket_) {
                 auto client = new net::Socket();
                 if (socket_.accept(*client)) {
-                    logger_.info("New client connected", -1, "handleConnections");
+                    logger_.info("New client connected", __func__);
                     sel.addRead(client, true);
                 }
                 else {
@@ -126,79 +130,85 @@ void HotelManager::handleConnections() {
                 }
             }
             else {
-                parseClientRequest(sock);
+                nlohmann::json request;
+                std::string requestStr;
+                if (!sock->receive(requestStr)) {
+                    logger_.error("Failed to receive request", __func__);
+                    continue;
+                }
+                if (requestStr.empty()) { // client closed
+                    logoutUser(socketToToken_[sock]);
+                    socketToToken_.erase(sock);
+                    sel.removeRead(sock);
+                    continue;
+                }
+
+                try {
+                    request = nlohmann::json::parse(requestStr);
+                }
+                catch (const nlohmann::json::parse_error& e) {
+                    logger_.error("Failed to parse request: "s + e.what(), __func__);
+                    continue;
+                }
+                handleRequest(request, sock);
             }
         }
     }
 }
 
-void HotelManager::parseClientRequest(net::Socket* client) {
-    nlohmann::json request;
-    std::string requestStr;
-    if (!client->receive(requestStr)) {
-        logger_.error("Failed to receive request", -1, "handleClientRequest");
-        return;
-    }
-    try {
-        request = nlohmann::json::parse(requestStr);
-    }
-    catch (const std::exception& e) {
-        logger_.error("Failed to parse request: " + std::string(e.what()), -1, "handleClientRequest");
-        return;
-    }
-}
-
 void HotelManager::handleRequest(const nlohmann::json& request, net::Socket* client) {
-    if (request.find("command") == request.end() || request["action"].is_null()) {
-        logger_.error("Request has no command", -1, "handleRequest");
+    if (!request.contains("command") || request["command"].is_null()) {
+        logger_.error("Request has no command", __func__);
         return;
     }
     std::string command = request["command"];
 
+    // clang-format off
     static std::unordered_map<std::string, std::function<nlohmann::json(const nlohmann::json&)>> handlers = {
         {"signin", std::bind(&HotelManager::handleSignin, this, std::placeholders::_1)},
         {"signup", std::bind(&HotelManager::handleSignup, this, std::placeholders::_1)},
         {"checkUsername", std::bind(&HotelManager::handleCheckUsername, this, std::placeholders::_1)},
-        {"userInfo", std::bind(&HotelManager::handleUserInfo, this, std::placeholders::_1)},
-        {"allUsers", std::bind(&HotelManager::handleAllUsers, this, std::placeholders::_1)},
-        {"roomsInfo", std::bind(&HotelManager::handleRoomsInfo, this, std::placeholders::_1)},
-        {"book", std::bind(&HotelManager::handleBook, this, std::placeholders::_1)},
-        {"cancel", std::bind(&HotelManager::handleCancel, this, std::placeholders::_1)},
-        {"passDay", std::bind(&HotelManager::handlePassDay, this, std::placeholders::_1)},
-        {"editInfo", std::bind(&HotelManager::handleEditInfo, this, std::placeholders::_1)},
-        {"leaveRoom", std::bind(&HotelManager::handleLeaveRoom, this, std::placeholders::_1)},
-        {"addRoom", std::bind(&HotelManager::handleAddRoom, this, std::placeholders::_1)},
+        {"userInfo",   std::bind(&HotelManager::handleUserInfo,   this, std::placeholders::_1)},
+        {"allUsers",   std::bind(&HotelManager::handleAllUsers,   this, std::placeholders::_1)},
+        {"roomsInfo",  std::bind(&HotelManager::handleRoomsInfo,  this, std::placeholders::_1)},
+        {"book",       std::bind(&HotelManager::handleBook,       this, std::placeholders::_1)},
+        {"cancel",     std::bind(&HotelManager::handleCancel,     this, std::placeholders::_1)},
+        {"passDay",    std::bind(&HotelManager::handlePassDay,    this, std::placeholders::_1)},
+        {"editInfo",   std::bind(&HotelManager::handleEditInfo,   this, std::placeholders::_1)},
+        {"leaveRoom",  std::bind(&HotelManager::handleLeaveRoom,  this, std::placeholders::_1)},
+        {"addRoom",    std::bind(&HotelManager::handleAddRoom,    this, std::placeholders::_1)},
         {"modifyRoom", std::bind(&HotelManager::handleModifyRoom, this, std::placeholders::_1)},
         {"removeRoom", std::bind(&HotelManager::handleRemoveRoom, this, std::placeholders::_1)},
-        {"logout", std::bind(&HotelManager::handleLogout, this, std::placeholders::_1)},
+        {"logout",     std::bind(&HotelManager::handleLogout,     this, std::placeholders::_1)},
     };
+    // clang-format on
 
     if (handlers.find(command) == handlers.end()) {
-        logger_.error("Unknown command received: " + command, -1, "handleRequest");
+        logger_.error("Unknown command received: " + command, __func__);
         return;
     }
 
     nlohmann::json response = handlers[command](request);
-    response["timestamp"] = DateTime::getServerDate();
+    response["timestamp"] = DateTime::toStr(DateTime::getServerDate());
     response["command"] = command;
+
+    if (command == "signin" && response["status"] == StatusCode::SignedIn) {
+        socketToToken_[client] = response["response"]["token"];
+    }
+    else if (command == "logout" && response["status"] == StatusCode::LoggedOut) {
+        socketToToken_[client] = "";
+    }
+
     std::string responseStr = response.dump();
     if (!client->send(responseStr)) {
-        logger_.error("Failed to send response", -1, "handleRequest");
+        logger_.error("Failed to send response", __func__);
         return;
     }
-    logger_.info("Responded to request", -1, "handleRequest", {
-                                                                  {"status", response["status"]},
-                                                                  {"message", response["message"]},
-                                                                  {"user", response["user"]},
-                                                              });
-}
-
-bool HotelManager::getRequestToken(const nlohmann::json& request, std::string& token) {
-    if (request.find("token") == request.end() || request["token"].is_null()) {
-        return false;
-    }
-    token = request["token"];
-    return true;
+    logger_.info("Responded to request", __func__, -1, {
+                                                           {"status", response["status"]},
+                                                           {"message", response["message"]},
+                                                           {"user", response["user"]},
+                                                       });
 }
 
 std::string HotelManager::generateTokenForUser(int userId) {
@@ -261,13 +271,6 @@ void HotelManager::removeToken(const std::string& token) {
     tokens_.erase(token);
 }
 
-bool HotelManager::hasArgument(const nlohmann::json& request, const std::string& argument) {
-    if (!request.contains("arguments") || !request["arguments"].is_object()) {
-        return false;
-    }
-    return request["arguments"].contains(argument) && !request["arguments"][argument].is_null();
-}
-
 void HotelManager::commitChanges() {
     commitUsers();
     commitRooms();
@@ -279,9 +282,8 @@ void HotelManager::commitUsers() {
         users.push_back(user.toJson());
     }
     std::ofstream usersFile(USERS_FILE);
-    usersFile << users.dump(4);
-    usersFile.close();
-    logger_.info("Users committed", -1, "commitUsers");
+    usersFile << std::setw(4) << users;
+    logger_.info("Users committed", __func__);
 }
 
 void HotelManager::commitRooms() {
@@ -298,26 +300,41 @@ void HotelManager::commitRooms() {
         rooms.push_back(roomJson);
     }
     std::ofstream roomsFile(ROOMS_FILE);
-    roomsFile << rooms.dump(4);
-    roomsFile.close();
-    logger_.info("Rooms committed", -1, "commitRooms");
+    roomsFile << std::setw(4) << rooms;
+    logger_.info("Rooms committed", __func__);
+}
+
+bool HotelManager::hasArgument(const nlohmann::json& request, const std::string& argument) {
+    if (!request.contains("arguments") || !request["arguments"].is_object()) {
+        return false;
+    }
+    return request["arguments"].contains(argument) && !request["arguments"][argument].is_null();
+}
+
+bool HotelManager::getRequestToken(const nlohmann::json& request, std::string& token) {
+    if (!request.contains("token") || request["token"].is_null()) {
+        return false;
+    }
+    token = request["token"];
+    return true;
 }
 
 nlohmann::json HotelManager::handleSignin(const nlohmann::json& request) {
     if (!hasArgument(request, "username") || !hasArgument(request, "password")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", ""},
             {"response", nullptr},
         };
     }
-    std::string username = request["arguments"]["username"];
-    std::string password = request["arguments"]["password"];
+    auto& args = request["arguments"];
+    std::string username = args["username"];
+    std::string password = args["password"];
     int userId = findUser(username);
     if (userId == -1) {
         return {
-            {"status", 430},
+            {"status", StatusCode::WrongUserPassword},
             {"message", "Username doesn't exist"},
             {"user", ""},
             {"response", nullptr},
@@ -326,7 +343,7 @@ nlohmann::json HotelManager::handleSignin(const nlohmann::json& request) {
     password = crypto::base64Decode(password);
     if (!isPasswordCorrect(userId, password)) {
         return {
-            {"status", 430},
+            {"status", StatusCode::WrongUserPassword},
             {"message", "Wrong password"},
             {"user", ""},
             {"response", nullptr},
@@ -334,45 +351,46 @@ nlohmann::json HotelManager::handleSignin(const nlohmann::json& request) {
     }
     std::string token = generateTokenForUser(userId);
     return {
-        {"status", 230},
+        {"status", StatusCode::SignedIn},
         {"message", "Signed in successfully"},
         {"user", std::to_string(userId)},
-        {
-            "response",
-            {"token", token},
-        },
+        {"response", {
+                         {"token", token},
+                     }},
     };
 }
 
 nlohmann::json HotelManager::handleSignup(const nlohmann::json& request) {
-    if (!hasArgument(request, "username") || !hasArgument(request, "password") || !hasArgument(request, "balance") || !hasArgument(request, "phone") || !hasArgument(request, "address")) {
+    if (!hasArgument(request, "username") ||
+        !hasArgument(request, "password") ||
+        !hasArgument(request, "balance") ||
+        !hasArgument(request, "phone") ||
+        !hasArgument(request, "address")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", ""},
             {"response", nullptr},
         };
     }
-    std::string username = request["arguments"]["username"];
-    std::string password = request["arguments"]["password"];
-    std::string phone = request["arguments"]["phone"];
-    std::string address = request["arguments"]["address"];
-    int balance;
-    try {
-        balance = request["arguments"]["balance"];
-    }
-    catch (const std::exception& e) {
+    auto& args = request["arguments"];
+    std::string username = args["username"];
+    std::string password = args["password"];
+    std::string phone = args["phone"];
+    std::string address = args["address"];
+    if (!args["balance"].is_number_integer()) {
         return {
-            {"status", 503},
+            {"status", StatusCode::BadCommand},
             {"message", "Invalid balance"},
             {"user", ""},
             {"response", nullptr},
         };
     }
+    int balance = args["balance"];
     int userId = findUser(username);
     if (userId != -1) {
         return {
-            {"status", 451},
+            {"status", StatusCode::UsernameExists},
             {"message", "Username already exists"},
             {"user", ""},
             {"response", nullptr},
@@ -381,7 +399,7 @@ nlohmann::json HotelManager::handleSignup(const nlohmann::json& request) {
     password = crypto::base64Decode(password);
     addUser(username, password, balance, phone, address);
     return {
-        {"status", 231},
+        {"status", StatusCode::SignedUp},
         {"message", "Signed up successfully"},
         {"user", ""},
         {"response", nullptr},
@@ -391,24 +409,21 @@ nlohmann::json HotelManager::handleSignup(const nlohmann::json& request) {
 nlohmann::json HotelManager::handleCheckUsername(const nlohmann::json& request) {
     if (!hasArgument(request, "username")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", ""},
             {"response", nullptr},
         };
     }
     std::string username = request["arguments"]["username"];
-    bool exists = findUser(username) != -1;
+    bool exists = (findUser(username) != -1);
     return {
-        {"status", exists ? 451 : 311},
+        {"status", exists ? StatusCode::UsernameExists : StatusCode::UsernameDoesNotExist},
         {"message", exists ? "Username already exists" : "Username is available"},
         {"user", ""},
-        {
-            "response",
-            {
-                {"checkUsername", !exists},
-            },
-        },
+        {"response", {
+                         {"checkUsername", !exists},
+                     }},
     };
 }
 
@@ -416,7 +431,7 @@ nlohmann::json HotelManager::handleUserInfo(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -425,7 +440,7 @@ nlohmann::json HotelManager::handleUserInfo(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -433,7 +448,7 @@ nlohmann::json HotelManager::handleUserInfo(const nlohmann::json& request) {
     }
     refreshTokenAccessTime(token);
     return {
-        {"status", 230},
+        {"status", StatusCode::OK},
         {"message", "User info"},
         {"user", std::to_string(userId)},
         {"response", getUserInfo(userId)},
@@ -444,7 +459,7 @@ nlohmann::json HotelManager::handleAllUsers(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -453,7 +468,7 @@ nlohmann::json HotelManager::handleAllUsers(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -462,14 +477,14 @@ nlohmann::json HotelManager::handleAllUsers(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!isAdministrator(userId)) {
         return {
-            {"status", 403},
+            {"status", StatusCode::AccessDenied},
             {"message", "Access denied"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
     return {
-        {"status", 230},
+        {"status", StatusCode::OK},
         {"message", "All users"},
         {"user", std::to_string(userId)},
         {"response", getAllUsers()},
@@ -480,7 +495,7 @@ nlohmann::json HotelManager::handleRoomsInfo(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -489,17 +504,23 @@ nlohmann::json HotelManager::handleRoomsInfo(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
         };
     }
     refreshTokenAccessTime(token);
-    bool onlyAvailable = hasArgument(request, "onlyAvailable") && request["arguments"]["onlyAvailable"];
+    bool onlyAvailable = false;
+    if (hasArgument(request, "onlyAvailable")) {
+        auto& onlyAv = request["arguments"]["onlyAvailable"];
+        if (onlyAv.is_boolean()) {
+            onlyAvailable = onlyAv;
+        }
+    }
     bool showReservations = isAdministrator(userId);
     return {
-        {"status", 230},
+        {"status", StatusCode::OK},
         {"message", "Rooms info"},
         {"user", std::to_string(userId)},
         {"response", getRoomsInfo(onlyAvailable, showReservations)},
@@ -510,7 +531,7 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -519,47 +540,49 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
         };
     }
     refreshTokenAccessTime(token);
-    if (!hasArgument(request, "roomNum") || !hasArgument(request, "numOfBeds") || !hasArgument(request, "checkInDate") || !hasArgument(request, "checkOutDate")) {
+    if (!hasArgument(request, "roomNum") ||
+        !hasArgument(request, "numOfBeds") ||
+        !hasArgument(request, "checkInDate") ||
+        !hasArgument(request, "checkOutDate")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    std::string roomNum = request["arguments"]["roomNum"];
-    std::string checkInDate = request["arguments"]["checkInDate"];
-    std::string checkOutDate = request["arguments"]["checkOutDate"];
-    int numOfBeds;
-    try {
-        numOfBeds = request["arguments"]["numOfBeds"];
-    }
-    catch (std::exception& e) {
+    auto& args = request["arguments"];
+    std::string roomNum = args["roomNum"];
+    std::string checkIn = args["checkInDate"];
+    std::string checkOut = args["checkOutDate"];
+    if (!args["numOfBeds"].is_number_integer()) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Invalid number of beds"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    if (!DateTime::isValid(checkInDate) || !DateTime::isValid(checkOutDate)) {
+    int numOfBeds = args["numOfBeds"];
+    date::year_month_day checkInDate, checkOutDate;
+    if (!DateTime::parse(checkIn, checkInDate) || !DateTime::parse(checkOut, checkOutDate)) {
         return {
-            {"status", 503},
+            {"status", StatusCode::BadCommand},
             {"message", "Invalid date"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    if (DateTime::compare(checkInDate, checkOutDate) >= 0) {
+    if (checkInDate >= checkOutDate) {
         return {
-            {"status", 503},
+            {"status", StatusCode::BadCommand},
             {"message", "Invalid date range"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -567,7 +590,7 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
     }
     if (!doesRoomExist(roomNum)) {
         return {
-            {"status", 101},
+            {"status", StatusCode::RoomNotFound},
             {"message", "Room does not exist"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -575,7 +598,7 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
     }
     if (!isRoomAvailable(roomNum, numOfBeds, checkInDate, checkOutDate)) {
         return {
-            {"status", 109},
+            {"status", StatusCode::RoomCapacityFull},
             {"message", "Room is full"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -583,7 +606,7 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
     }
     if (!hasEnoughBalance(userId, roomNum, numOfBeds)) {
         return {
-            {"status", 108},
+            {"status", StatusCode::BalanceNotEnough},
             {"message", "Not enough balance"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -591,7 +614,7 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
     }
     bookRoom(userId, roomNum, numOfBeds, checkInDate, checkOutDate);
     return {
-        {"status", 200},
+        {"status", StatusCode::OK},
         {"message", "Room booked"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -602,7 +625,7 @@ nlohmann::json HotelManager::handleCancel(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -611,7 +634,7 @@ nlohmann::json HotelManager::handleCancel(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -620,28 +643,26 @@ nlohmann::json HotelManager::handleCancel(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!hasArgument(request, "roomNum") || !hasArgument(request, "numOfBeds")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    std::string roomNum = request["arguments"]["roomNum"];
-    int numOfBeds;
-    try {
-        numOfBeds = request["arguments"]["numOfBeds"];
-    }
-    catch (std::exception& e) {
+    auto& args = request["arguments"];
+    std::string roomNum = args["roomNum"];
+    if (!args["numOfBeds"].is_number_integer()) {
         return {
-            {"status", 401},
+            {"status", StatusCode::InvalidValue},
             {"message", "Invalid number of beds"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
+    int numOfBeds = args["numOfBeds"];
     if (!doesRoomExist(roomNum)) {
         return {
-            {"status", 101},
+            {"status", StatusCode::RoomNotFound},
             {"message", "Room does not exist"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -649,7 +670,7 @@ nlohmann::json HotelManager::handleCancel(const nlohmann::json& request) {
     }
     if (!hasReservation(userId, roomNum, numOfBeds)) {
         return {
-            {"status", 102},
+            {"status", StatusCode::ReservationNotFound},
             {"message", "Reservation does not exist"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -657,7 +678,7 @@ nlohmann::json HotelManager::handleCancel(const nlohmann::json& request) {
     }
     cancelReservation(userId, roomNum, numOfBeds);
     return {
-        {"status", 110},
+        {"status", StatusCode::CancelOK},
         {"message", "Reservation cancelled"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -668,7 +689,7 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -677,7 +698,7 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -686,7 +707,7 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!hasArgument(request, "days")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -694,28 +715,25 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
     }
     if (!isAdministrator(userId)) {
         return {
-            {"status", 403},
+            {"status", StatusCode::AccessDenied},
             {"message", "Access denied"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    int days;
-    try {
-        days = request["arguments"]["days"];
-    }
-    catch (const std::exception& e) {
+    if (!request["arguments"]["days"].is_number_integer()) {
         return {
-            {"status", 401},
+            {"status", StatusCode::InvalidValue},
             {"message", "Invalid days"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
+    int days = request["arguments"]["days"];
     DateTime::increaseServerDate(days);
     checkOutExpiredReservations();
     return {
-        {"status", 200},
+        {"status", StatusCode::OK},
         {"message", "Passed days successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -726,7 +744,7 @@ nlohmann::json HotelManager::handleEditInfo(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -735,28 +753,31 @@ nlohmann::json HotelManager::handleEditInfo(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
         };
     }
     refreshTokenAccessTime(token);
-    if (!hasArgument(request, "password") || !hasArgument(request, "phone") || !hasArgument(request, "address")) {
+    if (!hasArgument(request, "password") ||
+        !hasArgument(request, "phone") ||
+        !hasArgument(request, "address")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    std::string password = request["arguments"]["password"];
-    std::string phone = request["arguments"]["phone"];
-    std::string address = request["arguments"]["address"];
+    auto& args = request["arguments"];
+    std::string password = args["password"];
+    std::string phone = args["phone"];
+    std::string address = args["address"];
     password = crypto::base64Decode(password);
     editUser(userId, password, phone, address);
     return {
-        {"status", 312},
+        {"status", StatusCode::UserInfoChanged},
         {"message", "User info edited successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -767,7 +788,7 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -776,7 +797,7 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -785,7 +806,7 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!hasArgument(request, "roomNum")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -794,7 +815,7 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
     std::string roomNum = request["arguments"]["roomNum"];
     if (!doesRoomExist(roomNum)) {
         return {
-            {"status", 503},
+            {"status", StatusCode::BadCommand},
             {"message", "Room not found"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -802,7 +823,7 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
     }
     if (!isResidence(userId, roomNum)) {
         return {
-            {"status", 102},
+            {"status", StatusCode::ReservationNotFound},
             {"message", "User is not in this room"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -810,7 +831,7 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
     }
     leaveRoom(userId, roomNum);
     return {
-        {"status", 413},
+        {"status", StatusCode::UserLeftRoom},
         {"message", "Left room successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -821,7 +842,7 @@ nlohmann::json HotelManager::handleAddRoom(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -830,7 +851,7 @@ nlohmann::json HotelManager::handleAddRoom(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -839,37 +860,37 @@ nlohmann::json HotelManager::handleAddRoom(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!isAdministrator(userId)) {
         return {
-            {"status", 403},
+            {"status", StatusCode::AccessDenied},
             {"message", "Access denied"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    if (!hasArgument(request, "roomNum") || !hasArgument(request, "maxCapacity") || !hasArgument(request, "price")) {
+    if (!hasArgument(request, "roomNum") ||
+        !hasArgument(request, "maxCapacity") ||
+        !hasArgument(request, "price")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    std::string roomNum = request["arguments"]["roomNum"];
-    int maxCapacity, price;
-    try {
-        maxCapacity = request["arguments"]["maxCapacity"];
-        price = request["arguments"]["price"];
-    }
-    catch (const std::exception& e) {
+    auto& args = request["arguments"];
+    std::string roomNum = args["roomNum"];
+    if (!args["maxCapacity"].is_number_integer() || !args["price"].is_number_integer()) {
         return {
-            {"status", 401},
+            {"status", StatusCode::InvalidValue},
             {"message", "Invalid arguments"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
+    int maxCapacity = args["maxCapacity"];
+    int price = args["price"];
     if (doesRoomExist(roomNum)) {
         return {
-            {"status", 111},
+            {"status", StatusCode::RoomExists},
             {"message", "Room already exists"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -877,7 +898,7 @@ nlohmann::json HotelManager::handleAddRoom(const nlohmann::json& request) {
     }
     addRoom(roomNum, maxCapacity, price);
     return {
-        {"status", 104},
+        {"status", StatusCode::RoomAdded},
         {"message", "Room added successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -888,7 +909,7 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -897,7 +918,7 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -906,37 +927,37 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!isAdministrator(userId)) {
         return {
-            {"status", 403},
+            {"status", StatusCode::AccessDenied},
             {"message", "Access denied"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    if (!hasArgument(request, "roomNum") || !hasArgument(request, "maxCapacity") || !hasArgument(request, "price")) {
+    if (!hasArgument(request, "roomNum") ||
+        !hasArgument(request, "maxCapacity") ||
+        !hasArgument(request, "price")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
-    std::string roomNum = request["arguments"]["roomNum"];
-    int maxCapacity, price;
-    try {
-        maxCapacity = request["arguments"]["maxCapacity"];
-        price = request["arguments"]["price"];
-    }
-    catch (const std::exception& e) {
+    auto& args = request["arguments"];
+    std::string roomNum = args["roomNum"];
+    if (!args["maxCapacity"].is_number_integer() || !args["price"].is_number_integer()) {
         return {
-            {"status", 401},
+            {"status", StatusCode::InvalidValue},
             {"message", "Invalid arguments"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
         };
     }
+    int maxCapacity = args["maxCapacity"];
+    int price = args["price"];
     if (!doesRoomExist(roomNum)) {
         return {
-            {"status", 101},
+            {"status", StatusCode::RoomNotFound},
             {"message", "Room not found"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -944,7 +965,7 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
     }
     if (!canModifyRoom(roomNum, maxCapacity)) {
         return {
-            {"status", 109},
+            {"status", StatusCode::RoomCapacityFull},
             {"message", "Room is full"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -952,7 +973,7 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
     }
     modifyRoom(roomNum, maxCapacity, price);
     return {
-        {"status", 105},
+        {"status", StatusCode::RoomModified},
         {"message", "Room modified successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -963,7 +984,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -972,7 +993,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -981,7 +1002,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     refreshTokenAccessTime(token);
     if (!isAdministrator(userId)) {
         return {
-            {"status", 403},
+            {"status", StatusCode::AccessDenied},
             {"message", "Access denied"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -989,7 +1010,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     }
     if (!hasArgument(request, "roomNum")) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -998,7 +1019,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     std::string roomNum = request["arguments"]["roomNum"];
     if (!doesRoomExist(roomNum)) {
         return {
-            {"status", 101},
+            {"status", StatusCode::RoomNotFound},
             {"message", "Room not found"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -1006,7 +1027,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     }
     if (!canRemoveRoom(roomNum)) {
         return {
-            {"status", 109},
+            {"status", StatusCode::RoomCapacityFull},
             {"message", "Room is not empty"},
             {"user", std::to_string(userId)},
             {"response", nullptr},
@@ -1014,7 +1035,7 @@ nlohmann::json HotelManager::handleRemoveRoom(const nlohmann::json& request) {
     }
     removeRoom(roomNum);
     return {
-        {"status", 106},
+        {"status", StatusCode::RoomDeleted},
         {"message", "Room removed successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -1025,7 +1046,7 @@ nlohmann::json HotelManager::handleLogout(const nlohmann::json& request) {
     std::string token;
     if (!getRequestToken(request, token)) {
         return {
-            {"status", 1400},
+            {"status", StatusCode::BadRequest},
             {"message", "Token not provided"},
             {"user", ""},
             {"response", nullptr},
@@ -1034,7 +1055,7 @@ nlohmann::json HotelManager::handleLogout(const nlohmann::json& request) {
     int userId = getUser(token);
     if (userId == -1) {
         return {
-            {"status", 1401},
+            {"status", StatusCode::Unauthorized},
             {"message", "Invalid token"},
             {"user", ""},
             {"response", nullptr},
@@ -1042,7 +1063,7 @@ nlohmann::json HotelManager::handleLogout(const nlohmann::json& request) {
     }
     logoutUser(token);
     return {
-        {"status", 201},
+        {"status", StatusCode::LoggedOut},
         {"message", "Logged out successfully"},
         {"user", std::to_string(userId)},
         {"response", nullptr},
@@ -1088,8 +1109,7 @@ bool HotelManager::isPasswordCorrect(int userId, const std::string& password) co
 }
 
 bool HotelManager::isResidence(int userId, const std::string& roomNum) const {
-    date::year_month_day serverDate;
-    DateTime::parse(DateTime::getServerDate(), serverDate);
+    auto serverDate = DateTime::getServerDate();
     for (const auto& reservation : reservations_.at(roomNum)) {
         if (reservation.getUserId() == userId && reservation.hasConflict(serverDate)) {
             return true;
@@ -1115,20 +1135,19 @@ bool HotelManager::canModifyRoom(const std::string& roomNum, int maxCapacity) co
     if (maxCapacity >= rooms_.at(roomNum).getMaxCapacity()) {
         return true;
     }
-    date::year_month_day lastDate;
-    DateTime::parse(DateTime::getServerDate(), lastDate);
+    auto lastDate = DateTime::getServerDate();
     for (const auto& reservation : reservations_.at(roomNum)) {
         lastDate = std::max(lastDate, reservation.getCheckOut());
     }
-    return maxCapacity >= findMaximumUsers(roomNum, DateTime::getServerDate(), date::format("%F", lastDate));
+    return maxCapacity >= findMaximumUsers(roomNum, DateTime::getServerDate(), lastDate);
 }
 
 bool HotelManager::canRemoveRoom(const std::string& roomNum) const {
     return reservations_.at(roomNum).empty();
 }
 
-bool HotelManager::isRoomAvailable(const std::string& roomNum, int numOfBed, const std::string checkInDate, const std::string checkOutDate) const {
-    return rooms_.at(roomNum).getMaxCapacity() - findMaximumUsers(roomNum, checkInDate, checkOutDate) >= numOfBed;
+bool HotelManager::isRoomAvailable(const std::string& roomNum, int numOfBed, date::year_month_day checkIn, date::year_month_day checkOut) const {
+    return rooms_.at(roomNum).getMaxCapacity() - findMaximumUsers(roomNum, checkIn, checkOut) >= numOfBed;
 }
 
 bool HotelManager::hasEnoughBalance(int userId, const std::string& roomNum, int numOfBeds) const {
@@ -1136,12 +1155,9 @@ bool HotelManager::hasEnoughBalance(int userId, const std::string& roomNum, int 
     return users_.at(userId).getBalance() >= balanceNeeded;
 }
 
-int HotelManager::findMaximumUsers(const std::string& roomNum, const std::string& start, const std::string& end) const {
-    date::year_month_day startDate, endDate;
-    DateTime::parse(start, startDate);
-    DateTime::parse(end, endDate);
+int HotelManager::findMaximumUsers(const std::string& roomNum, date::year_month_day start, date::year_month_day end) const {
     int maxConflicts = 0;
-    for (date::year_month_day day = startDate; day < endDate; day = date::sys_days(day) + date::days(1)) {
+    for (date::sys_days day = start; day < end; day += date::days(1)) {
         int conflicts = 0;
         for (const auto& reservation : reservations_.at(roomNum)) {
             if (reservation.hasConflict(day)) {
@@ -1173,8 +1189,7 @@ int HotelManager::findUser(const std::string& username) const {
 }
 
 int HotelManager::getRoomCapacity(const std::string& roomNum) const {
-    date::year_month_day serverDate;
-    DateTime::parse(DateTime::getServerDate(), serverDate);
+    auto serverDate = DateTime::getServerDate();
     int capacity = rooms_.at(roomNum).getMaxCapacity();
     for (const auto& reservation : reservations_.at(roomNum)) {
         if (reservation.hasConflict(serverDate)) {
@@ -1199,8 +1214,7 @@ void HotelManager::editUser(int userId, const std::string& password, const std::
 }
 
 void HotelManager::checkOutExpiredReservations() {
-    date::year_month_day serverDate;
-    DateTime::parse(DateTime::getServerDate(), serverDate);
+    auto serverDate = DateTime::getServerDate();
     for (auto& room : reservations_) {
         for (auto& reservation : std::vector<Reservation>(room.second)) {
             if (reservation.isExpired(serverDate)) {
@@ -1212,8 +1226,7 @@ void HotelManager::checkOutExpiredReservations() {
 }
 
 void HotelManager::leaveRoom(int userId, const std::string& roomNum) {
-    date::year_month_day serverDate;
-    DateTime::parse(DateTime::getServerDate(), serverDate);
+    auto serverDate = DateTime::getServerDate();
     for (auto& reservation : std::vector<Reservation>(reservations_[roomNum])) {
         if (reservation.getUserId() == userId && reservation.hasConflict(serverDate)) {
             reservations_[roomNum].erase(std::remove(reservations_[roomNum].begin(), reservations_[roomNum].end(), reservation), reservations_[roomNum].end());
@@ -1240,8 +1253,7 @@ void HotelManager::removeRoom(const std::string& roomNum) {
 }
 
 void HotelManager::cancelReservation(int userId, const std::string& roomNum, int numOfBeds) {
-    date::year_month_day serverDate;
-    DateTime::parse(DateTime::getServerDate(), serverDate);
+    auto serverDate = DateTime::getServerDate();
     for (auto& reservation : std::vector<Reservation>(reservations_[roomNum])) {
         if (reservation.getUserId() == userId && reservation.getNumOfBeds() >= numOfBeds && reservation.canBeCancelled(serverDate)) {
             if (reservation.getNumOfBeds() > numOfBeds) {
@@ -1256,10 +1268,7 @@ void HotelManager::cancelReservation(int userId, const std::string& roomNum, int
     commitChanges();
 }
 
-void HotelManager::bookRoom(int userId, const std::string& roomNum, int numOfBeds, const std::string& checkInDate, const std::string& checkOutDate) {
-    date::year_month_day checkIn, checkOut;
-    DateTime::parse(checkInDate, checkIn);
-    DateTime::parse(checkOutDate, checkOut);
+void HotelManager::bookRoom(int userId, const std::string& roomNum, int numOfBeds, date::year_month_day checkIn, date::year_month_day checkOut) {
     reservations_[roomNum].emplace_back(userId, numOfBeds, checkIn, checkOut);
     users_[userId].decreaseBalance(numOfBeds * rooms_[roomNum].getPrice());
     commitChanges();

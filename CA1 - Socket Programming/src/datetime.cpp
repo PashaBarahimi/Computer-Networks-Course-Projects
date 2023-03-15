@@ -1,25 +1,35 @@
 #include "datetime.hpp"
 
-#include <chrono>
 #include <iomanip>
 #include <sstream>
 
-date::year_month_day DateTime::serverDate_(date::floor<date::days>(std::chrono::system_clock::now()));
+date::year_month_day DateTime::serverDate_(getDate());
 
-std::string DateTime::getDateTime() {
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+date::year_month_day DateTime::getDate() {
+    return date::floor<date::days>(std::chrono::system_clock::now());
+}
+
+std::chrono::system_clock::time_point DateTime::getDateTime() {
+    return std::chrono::system_clock::now();
+}
+
+date::year_month_day DateTime::getServerDate() {
+    return serverDate_;
+}
+
+std::string DateTime::toStr(std::chrono::system_clock::time_point dateTime) {
+    auto in_time_t = std::chrono::system_clock::to_time_t(dateTime);
     std::ostringstream ss;
     ss << std::put_time(std::localtime(&in_time_t), "%F %T");
     return ss.str();
 }
 
-std::string DateTime::getServerDate() {
-    return date::format("%F", serverDate_);
+std::string DateTime::toStr(date::year_month_day date) {
+    return date::format("%F", date);
 }
 
-bool DateTime::setServerDate(const std::string& date) {
-    return parse(date, serverDate_);
+void DateTime::setServerDate(date::year_month_day date) {
+    serverDate_ = date;
 }
 
 void DateTime::increaseServerDate(int days) {

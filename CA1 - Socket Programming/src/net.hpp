@@ -36,7 +36,7 @@ inline T ntoh(T in) {
     }
 }
 
-using Port = std::uint8_t;
+using Port = std::uint16_t;
 
 class IpAddr {
 public:
@@ -81,6 +81,10 @@ public:
 
     Socket() = default;
     explicit Socket(Type type);
+    Socket(const Socket& other) = delete;
+    Socket(Socket&& other);
+    Socket& operator=(const Socket& other) = delete;
+    Socket& operator=(Socket&& other);
     ~Socket();
 
     bool bind(IpAddr addr, Port port);
@@ -102,6 +106,7 @@ private:
     int socket_ = -1;
 
     friend class Select;
+    friend void swap(Socket& a, Socket& b);
 
     static sockaddr_in ipToSockaddr(IpAddr addr, Port port);
     static void sockaddrToIp(sockaddr_in addrIn, IpAddr& outAddr, Port& outPort);

@@ -1,9 +1,6 @@
 #ifndef HOTEL_MANAGER_HPP_INCLUDE
 #define HOTEL_MANAGER_HPP_INCLUDE
 
-#include <date.h>
-
-#include <chrono>
 #include <condition_variable>
 #include <fstream>
 #include <json.hpp>
@@ -51,6 +48,7 @@ private:
     std::unordered_map<std::string, std::vector<Reservation>> reservations_;
 
     std::unordered_map<std::string, UserAccess> tokens_;
+    std::unordered_map<net::Socket*, std::string> socketToToken_;
     std::mutex tokensMutex_;
     std::thread tokenCleaner_;
     std::condition_variable tokenCleanerCancel_;
@@ -60,7 +58,6 @@ private:
     void loadRooms();
     void setupServer();
     void handleConnections();
-    void parseClientRequest(net::Socket* client);
     void handleRequest(const nlohmann::json& request, net::Socket* client);
 
     std::string generateTokenForUser(int userId);
@@ -68,12 +65,13 @@ private:
     void refreshTokenAccessTime(const std::string& token);
     void cleanTokens();
     void removeToken(const std::string& token);
-    bool getRequestToken(const nlohmann::json& request, std::string& token);
 
-    bool hasArgument(const nlohmann::json& request, const std::string& argument);
     void commitChanges();
     void commitUsers();
     void commitRooms();
+
+    bool hasArgument(const nlohmann::json& request, const std::string& argument);
+    bool getRequestToken(const nlohmann::json& request, std::string& token);
 
     nlohmann::json handleSignin(const nlohmann::json& request);
     nlohmann::json handleSignup(const nlohmann::json& request);
@@ -102,9 +100,9 @@ private:
     bool doesRoomExist(const std::string& roomNum) const;
     bool canModifyRoom(const std::string& roomNum, int maxCapacity) const;
     bool canRemoveRoom(const std::string& roomNum) const;
-    bool isRoomAvailable(const std::string& roomNum, int numOfBed, const std::string checkInDate, const std::string checkOutDate) const;
+    bool isRoomAvailable(const std::string& roomNum, int numOfBed, date::year_month_day checkIn, date::year_month_day checkOut) const;
     bool hasEnoughBalance(int userId, const std::string& roomNum, int numOfBeds) const;
-    int findMaximumUsers(const std::string& roomNum, const std::string& start, const std::string& end) const;
+    int findMaximumUsers(const std::string& roomNum, date::year_month_day start, date::year_month_day end) const;
     int findUser(const std::string& username) const;
     int getUser(const std::string& token);
     int getRoomCapacity(const std::string& roomNum) const;
@@ -117,7 +115,7 @@ private:
     void modifyRoom(const std::string& roomNum, int maxCapacity, int price);
     void removeRoom(const std::string& roomNum);
     void cancelReservation(int userId, const std::string& roomNum, int numOfBeds);
-    void bookRoom(int userId, const std::string& roomNum, int numOfBeds, const std::string& checkInDate, const std::string& checkOutDate);
+    void bookRoom(int userId, const std::string& roomNum, int numOfBeds, date::year_month_day checkIn, date::year_month_day checkOut);
 };
 
 #endif // HOTEL_MANAGER_HPP_INCLUDE
