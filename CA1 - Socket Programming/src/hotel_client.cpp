@@ -161,7 +161,9 @@ std::string HotelClient::roomsInfo(bool onlyAvailable) {
         }
     }
     auto ret = sstr.str();
-    ret.pop_back();
+    if (!ret.empty()) {
+        ret.pop_back();
+    }
     return ret;
 }
 
@@ -175,6 +177,28 @@ std::string HotelClient::book(const std::string& roomNum, int numOfBeds, const s
     };
     auto res = getResponse(req);
     return statusMsg(res);
+}
+
+std::string HotelClient::showReservations() {
+    auto req = requestJson("showReservations");
+    auto res = getResponse(req);
+    if (res["status"] != StatusCode::OK) {
+        return statusMsg(res);
+    }
+    std::ostringstream sstr;
+    int resId = 1;
+    for (const auto& reservation : res["response"]) {
+        sstr << "-- Reservation #" << resId++ << ":\n";
+        sstr << "| Room Number: " << reservation["roomNum"].get<std::string>() << '\n';
+        sstr << "| Number of Beds: " << reservation["numOfBeds"] << '\n';
+        sstr << "| Check-in date:  " << reservation["checkInDate"].get<std::string>() << '\n';
+        sstr << "| Check-out date: " << reservation["checkOutDate"].get<std::string>() << '\n';
+    }
+    auto ret = sstr.str();
+    if (!ret.empty()) {
+        ret.pop_back();
+    }
+    return ret;
 }
 
 std::string HotelClient::cancel(const std::string& roomNum, int numOfBeds) {

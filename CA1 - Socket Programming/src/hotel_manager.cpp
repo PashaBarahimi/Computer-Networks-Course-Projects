@@ -166,21 +166,22 @@ void HotelManager::handleRequest(const nlohmann::json& request, net::Socket* cli
 
     // clang-format off
     static std::unordered_map<std::string, std::function<nlohmann::json(const nlohmann::json&)>> handlers = {
-        {"signin", std::bind(&HotelManager::handleSignin, this, std::placeholders::_1)},
-        {"signup", std::bind(&HotelManager::handleSignup, this, std::placeholders::_1)},
-        {"checkUsername", std::bind(&HotelManager::handleCheckUsername, this, std::placeholders::_1)},
-        {"userInfo",   std::bind(&HotelManager::handleUserInfo,   this, std::placeholders::_1)},
-        {"allUsers",   std::bind(&HotelManager::handleAllUsers,   this, std::placeholders::_1)},
-        {"roomsInfo",  std::bind(&HotelManager::handleRoomsInfo,  this, std::placeholders::_1)},
-        {"book",       std::bind(&HotelManager::handleBook,       this, std::placeholders::_1)},
-        {"cancel",     std::bind(&HotelManager::handleCancel,     this, std::placeholders::_1)},
-        {"passDay",    std::bind(&HotelManager::handlePassDay,    this, std::placeholders::_1)},
-        {"editInfo",   std::bind(&HotelManager::handleEditInfo,   this, std::placeholders::_1)},
-        {"leaveRoom",  std::bind(&HotelManager::handleLeaveRoom,  this, std::placeholders::_1)},
-        {"addRoom",    std::bind(&HotelManager::handleAddRoom,    this, std::placeholders::_1)},
-        {"modifyRoom", std::bind(&HotelManager::handleModifyRoom, this, std::placeholders::_1)},
-        {"removeRoom", std::bind(&HotelManager::handleRemoveRoom, this, std::placeholders::_1)},
-        {"logout",     std::bind(&HotelManager::handleLogout,     this, std::placeholders::_1)},
+        {"signin",           std::bind(&HotelManager::handleSignin, this, std::placeholders::_1)},
+        {"signup",           std::bind(&HotelManager::handleSignup, this, std::placeholders::_1)},
+        {"checkUsername",    std::bind(&HotelManager::handleCheckUsername, this, std::placeholders::_1)},
+        {"userInfo",         std::bind(&HotelManager::handleUserInfo,   this, std::placeholders::_1)},
+        {"allUsers",         std::bind(&HotelManager::handleAllUsers,   this, std::placeholders::_1)},
+        {"roomsInfo",        std::bind(&HotelManager::handleRoomsInfo,  this, std::placeholders::_1)},
+        {"book",             std::bind(&HotelManager::handleBook,       this, std::placeholders::_1)},
+        {"showReservations", std::bind(&HotelManager::handleShowReservations, this, std::placeholders::_1)},
+        {"cancel",           std::bind(&HotelManager::handleCancel,     this, std::placeholders::_1)},
+        {"passDay",          std::bind(&HotelManager::handlePassDay,    this, std::placeholders::_1)},
+        {"editInfo",         std::bind(&HotelManager::handleEditInfo,   this, std::placeholders::_1)},
+        {"leaveRoom",        std::bind(&HotelManager::handleLeaveRoom,  this, std::placeholders::_1)},
+        {"addRoom",          std::bind(&HotelManager::handleAddRoom,    this, std::placeholders::_1)},
+        {"modifyRoom",       std::bind(&HotelManager::handleModifyRoom, this, std::placeholders::_1)},
+        {"removeRoom",       std::bind(&HotelManager::handleRemoveRoom, this, std::placeholders::_1)},
+        {"logout",           std::bind(&HotelManager::handleLogout,     this, std::placeholders::_1)},
     };
     // clang-format on
 
@@ -632,6 +633,34 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
         {"message", "Room booked"},
         {"userId", std::to_string(userId)},
         {"response", nullptr},
+    };
+}
+
+nlohmann::json HotelManager::handleShowReservations(const nlohmann::json& request) {
+    std::string token;
+    if (!getRequestToken(request, token)) {
+        return {
+            {"status", StatusCode::BadRequest},
+            {"message", "Token not provided"},
+            {"userId", ""},
+            {"response", nullptr},
+        };
+    }
+    int userId = getUser(token);
+    if (userId == -1) {
+        return {
+            {"status", StatusCode::Unauthorized},
+            {"message", "Invalid token"},
+            {"userId", ""},
+            {"response", nullptr},
+        };
+    }
+    refreshTokenAccessTime(token);
+    return {
+        {"status", StatusCode::OK},
+        {"message", "Reservations"},
+        {"userId", std::to_string(userId)},
+        {"response", getCancelableReservations(userId)},
     };
 }
 
@@ -1121,6 +1150,21 @@ nlohmann::json HotelManager::getRoomsInfo(bool onlyAvailable, bool showReservati
             }
         }
         response.push_back(roomJson);
+    }
+    return response;
+}
+
+nlohmann::json HotelManager::getCancelableReservations(int userId) const {
+    auto serverDate = DateTime::getServerDate();
+    nlohmann::json response = nlohmann::json::array();
+    for (const auto& room : reservations_) {
+        for (const auto& reservation : room.second) {
+            if (reservation.getUserId() == userId && reservation.canBeCancelled(serverDate)) {
+                auto res = reservation.toJson();
+                res["roomNum"] = room.first;
+                response.push_back(res);
+            }
+        }
     }
     return response;
 }

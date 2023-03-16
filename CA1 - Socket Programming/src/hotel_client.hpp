@@ -18,6 +18,7 @@ public:
     std::string allUsers();
     std::string roomsInfo(bool onlyAvailable = false);
     std::string book(const std::string& roomNum, int numOfBeds, const std::string& checkInDate, const std::string& checkOutDate);
+    std::string showReservations();
     std::string cancel(const std::string& roomNum, int numOfBeds);
     std::string passDay(int numOfDays);
     std::string editInfo(const std::string& password, const std::string& phone, const std::string& address);

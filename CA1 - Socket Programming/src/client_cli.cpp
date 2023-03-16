@@ -144,7 +144,13 @@ std::unique_ptr<cli::Menu> ClientCLI::createBookMenu(const std::string& parentNa
 }
 
 std::unique_ptr<cli::Menu> ClientCLI::createCancelMenu(const std::string& parentName) {
-    auto cancelMenu = std::make_unique<cli::Menu>("Cancel", "[cancel]");
+    auto cancelMenu = std::make_unique<cli::Menu>("Cancel", "[showReservations] [cancel]");
+    cancelMenu->Insert(
+        "showReservations", [this](std::ostream& out) {
+            out << client_.showReservations() << std::endl;
+            checkMainMenuItems();
+        },
+        "Show reservations");
     cancelMenu->Insert(
         "cancel", [this, parentName](std::ostream& out, const std::string& roomNum, int numOfBeds) {
             out << client_.cancel(roomNum, numOfBeds) << std::endl;
