@@ -576,6 +576,14 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
         };
     }
     int numOfBeds = args["numOfBeds"];
+    if (numOfBeds < 1) {
+        return {
+            {"status", StatusCode::BadRequest},
+            {"message", "Invalid number of beds"},
+            {"userId", std::to_string(userId)},
+            {"response", nullptr},
+        };
+    }
     date::year_month_day checkInDate, checkOutDate;
     if (!DateTime::parse(checkIn, checkInDate) || !DateTime::parse(checkOut, checkOutDate)) {
         return {
@@ -585,7 +593,8 @@ nlohmann::json HotelManager::handleBook(const nlohmann::json& request) {
             {"response", nullptr},
         };
     }
-    if (checkInDate >= checkOutDate) {
+    auto serverDate = DateTime::getServerDate();
+    if (checkInDate >= checkOutDate || checkInDate < serverDate) {
         return {
             {"status", StatusCode::BadCommand},
             {"message", "Invalid date range"},
@@ -1135,8 +1144,9 @@ bool HotelManager::isResidence(int userId, const std::string& roomNum) const {
 }
 
 bool HotelManager::hasReservation(int userId, const std::string& roomNum, int numOfBeds) const {
+    auto serverDate = DateTime::getServerDate();
     for (const auto& reservation : reservations_.at(roomNum)) {
-        if (reservation.getUserId() == userId && reservation.getNumOfBeds() >= numOfBeds) {
+        if (reservation.getUserId() == userId && reservation.getNumOfBeds() >= numOfBeds && reservation.canBeCancelled(serverDate)) {
             return true;
         }
     }
@@ -1282,7 +1292,8 @@ void HotelManager::cancelReservation(int userId, const std::string& roomNum, int
     for (auto& reservation : std::vector<Reservation>(reservations_[roomNum])) {
         if (reservation.getUserId() == userId && reservation.getNumOfBeds() >= numOfBeds && reservation.canBeCancelled(serverDate)) {
             if (reservation.getNumOfBeds() > numOfBeds) {
-                reservation.modify(reservation.getNumOfBeds() - numOfBeds);
+                auto res = std::find(reservations_[roomNum].begin(), reservations_[roomNum].end(), reservation);
+                res->modify(reservation.getNumOfBeds() - numOfBeds);
             }
             else {
                 reservations_[roomNum].erase(std::remove(reservations_[roomNum].begin(), reservations_[roomNum].end(), reservation), reservations_[roomNum].end());
