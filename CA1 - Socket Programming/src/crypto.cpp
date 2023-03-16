@@ -1,7 +1,6 @@
 #include "crypto.hpp"
 
 #include <crypto++/base64.h>
-#include <crypto++/hex.h>
 #include <crypto++/sha.h>
 
 namespace crypto {

@@ -2,35 +2,35 @@
     "users": [
         {
             "id": 0,
-            "user": "Admin",
+            "username": "Admin",
             "password": "admin",
             "admin": true
         },
         {
             "id": 1,
-            "user": "Morad",
+            "username": "Morad",
             "password": "1234",
             "admin": false,
             "balance": 1000,
-            "phoneNumber": "00945692356",
+            "phone": "00945692356",
             "address": "Canada, Montral"
         },
         {
             "id": 2,
-            "user": "Jasem",
+            "username": "Jasem",
             "password": "4321",
             "admin": false,
             "balance": 200,
-            "phoneNumber": "00125692356",
+            "phone": "00125692356",
             "address": "United States, NewYork"
         },
         {
             "id": 3,
-            "user": "Pedram",
+            "username": "Pedram",
             "password": "6789",
             "admin": false,
             "balance": 10,
-            "phoneNumber": "00989112659874",
+            "phone": "00989112659874",
             "address": "Iran, Rasht"
         }
     ]

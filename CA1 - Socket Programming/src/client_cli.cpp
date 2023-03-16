@@ -28,8 +28,15 @@ void ClientCLI::setupCLI() {
     auto mainMenu = createMainMenu();
     cli_ = new cli::Cli(std::move(mainMenu));
     cli::SetColor();
-    cli_->EnterAction([](std::ostream& out) { out << "Welcome to Hotel Misasha\n"; });
-    cli_->ExitAction([](std::ostream& out) { out << "Thank you for using Hotel Misasha\n"; });
+    cli_->EnterAction([](std::ostream& out) {
+        out << "Welcome to Hotel Misasha\n";
+    });
+    cli_->ExitAction([this](std::ostream& out) {
+        if (client_.isLoggedIn()) {
+            client_.logout();
+        }
+        out << "Thank you for using Hotel Misasha\n";
+    });
     cli_->StdExceptionHandler([](std::ostream& out, const std::string& cmd, const std::exception& e) {
         out << "Error: " << e.what() << std::endl;
     });
@@ -59,7 +66,7 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
             else {
                 out << "Username is available." << std::endl;
             }
-            std::string password, phone, email;
+            std::string password;
             int balance;
             if (!inputPassword(out, password)) {
                 return;
@@ -67,60 +74,59 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
             if (!getIntInput(out, "Enter your balance: ", balance)) {
                 return;
             }
-            phone = getInput(out, "Enter your phone number: ");
-            email = getInput(out, "Enter your email: ");
-            out << client_.signup(username, password, balance, phone, email) << std::endl;
+            std::string phone = getInput(out, "Enter your phone number: ");
+            std::string address = getInput(out, "Enter your address: ");
+            out << client_.signup(username, password, balance, phone, address) << std::endl;
             checkMainMenuItems();
         },
         "Signup (usage: signup <username>)"));
 
     userMenu_.push_back(mainMenu->Insert(
-        "UserInfo", [this](std::ostream& out) {
+        "userInfo", [this](std::ostream& out) {
             out << client_.userInfo() << std::endl;
             checkMainMenuItems();
         },
-        "View user information (usage: UserInfo)"));
+        "View user information"));
 
     userMenu_.push_back(mainMenu->Insert(
-        "AllUsers", [this](std::ostream& out) {
+        "allUsers", [this](std::ostream& out) {
             out << client_.allUsers() << std::endl;
             checkMainMenuItems();
         },
-        "View all users (usage: AllUsers)"));
+        "View all users"));
 
     userMenu_.push_back(mainMenu->Insert(
-        "RoomsInfo", [this](std::ostream& out) {
-            out << client_.roomsInfo() << std::endl;
+        "roomsInfo", [this](std::ostream& out, bool onlyAvailable) {
+            out << client_.roomsInfo(onlyAvailable) << std::endl;
             checkMainMenuItems();
         },
-        "View rooms information (usage: RoomsInfo)"));
+        "View rooms information (usage: roomsInfo <only available>)"));
+
+    userMenu_.push_back(mainMenu->Insert(
+        "editInfo", [this](std::ostream& out) {
+            std::string password;
+            if (!inputPassword(out, password)) {
+                return;
+            }
+            std::string phone = getInput(out, "Enter your phone number: ");
+            std::string address = getInput(out, "Enter your address: ");
+            out << client_.editInfo(password, phone, address) << std::endl;
+            checkMainMenuItems();
+        },
+        "Edit user information"));
 
     userMenu_.push_back(mainMenu->Insert(std::move(createBookMenu(menuName))));
     userMenu_.push_back(mainMenu->Insert(std::move(createCancelMenu(menuName))));
     userMenu_.push_back(mainMenu->Insert(std::move(createPassDayMenu(menuName))));
-
-    userMenu_.push_back(mainMenu->Insert(
-        "EditInfo", [this](std::ostream& out) {
-            std::string password, phone, email;
-            if (!inputPassword(out, password)) {
-                return;
-            }
-            phone = getInput(out, "Enter your phone number: ");
-            email = getInput(out, "Enter your email: ");
-            out << client_.editInfo(password, phone, email) << std::endl;
-            checkMainMenuItems();
-        },
-        "Edit user information (usage: EditInfo)"));
-
     userMenu_.push_back(mainMenu->Insert(std::move(createLeaveRoomMenu(menuName))));
     userMenu_.push_back(mainMenu->Insert(std::move(createRoomsMenu(menuName))));
 
     userMenu_.push_back(mainMenu->Insert(
-        "Logout", [this](std::ostream& out) {
+        "logout", [this](std::ostream& out) {
             out << client_.logout() << std::endl;
             checkMainMenuItems();
         },
-        "Logout (usage: Logout)"));
+        "Sign out of Hotel Misasha"));
     checkMainMenuItems();
     return mainMenu;
 }
@@ -133,7 +139,7 @@ std::unique_ptr<cli::Menu> ClientCLI::createBookMenu(const std::string& parentNa
             session_->Feed(parentName);
             checkMainMenuItems();
         },
-        "Book a room (usage: book <room number> <number of beds> <check in date> <check out date>)");
+        "Book a room (usage: book <room number> <number of beds> <check-in date> <checkout date>)");
     return bookMenu;
 }
 

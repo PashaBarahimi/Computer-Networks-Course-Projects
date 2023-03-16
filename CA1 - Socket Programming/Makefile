@@ -7,7 +7,7 @@ PATH_DEP   := $(PATH_BUILD)/dep
 
 include common_vars.mk
 
-LDLIBS   += -lcryptopp
+LDLIBS   += -lcryptopp -pthread
 CPPFLAGS += -I $(PATH_LIB)
 
 EXE_SERVER := server

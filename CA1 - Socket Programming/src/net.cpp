@@ -76,10 +76,28 @@ Socket::Socket(Type type)
     }
 }
 
+Socket::Socket(Socket&& other) {
+    swap(*this, other);
+}
+
+Socket& Socket::operator=(Socket&& other) {
+    swap(*this, other);
+    return *this;
+}
+
 Socket::~Socket() {
     if (socket_ != -1) {
         close(socket_);
     }
+}
+
+void swap(Socket& a, Socket& b) {
+    using std::swap;
+    swap(a.socket_, b.socket_);
+    swap(a.addr_, b.addr_);
+    swap(a.port_, b.port_);
+    swap(a.status_, b.status_);
+    swap(a.type_, b.type_);
 }
 
 bool Socket::bind(IpAddr addr, Port port) {

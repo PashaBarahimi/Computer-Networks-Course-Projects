@@ -21,43 +21,43 @@ Logger::Logger(Logger::Level level, std::ofstream& file)
       isaTTY_(false) {}
 
 void Logger::info(const std::string& message,
-                  const std::string& messageCode,
                   const std::string& action,
+                  int messageCode,
                   const std::unordered_map<std::string, std::string>& details) {
     if (level_ <= Level::Info) {
-        log(Level::Info, message, messageCode, action, details);
+        log(Level::Info, message, action, messageCode, details);
     }
 }
 
 void Logger::warn(const std::string& message,
-                  const std::string& messageCode,
                   const std::string& action,
+                  int messageCode,
                   const std::unordered_map<std::string, std::string>& details) {
     if (level_ <= Level::Warning) {
-        log(Level::Warning, message, messageCode, action, details);
+        log(Level::Warning, message, action, messageCode, details);
     }
 }
 
 void Logger::error(const std::string& message,
-                   const std::string& messageCode,
                    const std::string& action,
+                   int messageCode,
                    const std::unordered_map<std::string, std::string>& details) {
     if (level_ <= Level::Error) {
-        log(Level::Error, message, messageCode, action, details);
+        log(Level::Error, message, action, messageCode, details);
     }
 }
 
 void Logger::log(Level level,
                  const std::string& message,
-                 const std::string& messageCode,
                  const std::string& action,
+                 int messageCode,
                  const std::unordered_map<std::string, std::string>& details) {
     if (!isaTTY_) {
-        logJson(level, message, messageCode, action, details);
+        logJson(level, message, action, messageCode, details);
     }
     else {
         stream_ << levelToString(level) << ' ';
-        if (!messageCode.empty()) {
+        if (messageCode != -1) {
             stream_ << '{' << messageCode << "} ";
         }
         stream_ << message << std::endl;
@@ -66,13 +66,13 @@ void Logger::log(Level level,
 
 void Logger::logJson(Level level,
                      const std::string& message,
-                     const std::string& messageCode,
                      const std::string& action,
+                     int messageCode,
                      const std::unordered_map<std::string, std::string>& details) {
     nlohmann::json json;
     json["level"] = levelToString(level, true);
     json["message"] = message;
-    if (!messageCode.empty()) {
+    if (messageCode != -1) {
         json["messageCode"] = messageCode;
     }
     if (!action.empty()) {
@@ -81,8 +81,8 @@ void Logger::logJson(Level level,
     for (const auto& detail : details) {
         json[detail.first] = detail.second;
     }
-    json["timestamp"] = DateTime::getDateTime();
-    json["serverDate"] = DateTime::getServerDate();
+    json["timestamp"] = DateTime::toStr(DateTime::getDateTime());
+    json["serverDate"] = DateTime::toStr(DateTime::getServerDate());
     stream_ << json.dump(4) << std::endl;
 }
 
