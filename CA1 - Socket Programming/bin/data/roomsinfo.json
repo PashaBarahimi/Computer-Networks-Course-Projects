@@ -40,7 +40,7 @@
         },
         {
             "number": "301",
-            "isFull": false,
+            "isFull": true,
             "price": 100,
             "maxCapacity": 1,
             "capacity": 0,
