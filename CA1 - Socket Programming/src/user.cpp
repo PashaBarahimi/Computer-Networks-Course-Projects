@@ -1,18 +1,18 @@
 #include "user.hpp"
 
 User::User(int id, std::string username, std::string password, Role role,
-           int balance, std::string phoneNumber, std::string address)
+           int balance, std::string phone, std::string address)
     : id_(id),
       username_(std::move(username)),
       password_(std::move(password)),
       role_(role),
       balance_(balance),
-      phoneNumber_(std::move(phoneNumber)),
+      phone_(std::move(phone)),
       address_(std::move(address)) {}
 
-void User::editInfo(const std::string& newPassword, const std::string& newPhoneNumber, const std::string& newAddress) {
+void User::editInfo(const std::string& newPassword, const std::string& newPhone, const std::string& newAddress) {
     password_ = newPassword;
-    phoneNumber_ = newPhoneNumber;
+    phone_ = newPhone;
     address_ = newAddress;
 }
 
@@ -46,7 +46,7 @@ nlohmann::json User::toJson(bool includePassword) const {
     else {
         j["admin"] = false;
         j["balance"] = balance_;
-        j["phoneNumber"] = phoneNumber_;
+        j["phone"] = phone_;
         j["address"] = address_;
     }
     return j;

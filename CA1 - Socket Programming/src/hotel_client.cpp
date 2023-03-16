@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "crypto.hpp"
 #include "status_code.hpp"
 
 HotelClient::HotelClient(net::IpAddr host, net::Port port)
@@ -70,13 +71,12 @@ std::string HotelClient::signin(const std::string& username, const std::string& 
     auto req = requestJson("signin");
     req["arguments"] = {
         {"username", username},
-        {"password", password},
+        {"password", crypto::base64Encode(password)},
     };
     auto res = getResponse(req);
     if (res["status"] == StatusCode::SignedIn) {
-        auto& resArgs = res["response"];
-        token_ = resArgs["token"];
-        userId_ = resArgs["user"];
+        userId_ = res["userId"];
+        token_ = res["response"]["token"];
     }
     return statusMsg(res);
 }
@@ -85,7 +85,7 @@ std::string HotelClient::signup(const std::string& username, const std::string& 
     auto req = requestJson("signup");
     req["arguments"] = {
         {"username", username},
-        {"password", password},
+        {"password", crypto::base64Encode(password)},
         {"balance", balance},
         {"phone", phone},
         {"address", address},
@@ -97,15 +97,15 @@ std::string HotelClient::signup(const std::string& username, const std::string& 
 std::string HotelClient::formatUserInfo(const nlohmann::json& user) const {
     std::ostringstream sstr;
     if (user["admin"]) {
-        sstr << " -- User #" << user["id"] << " (admin):\n";
-        sstr << "Username: " << user["username"] << '\n';
+        sstr << "-- User #" << user["id"] << " (admin):\n";
+        sstr << "| Username: " << user["username"].get<std::string>();
     }
     else {
-        sstr << "User #" << user["id"] << " (normal)\n";
-        sstr << "Username: " << user["username"] << '\n';
-        sstr << "Balance:  " << user["balance"] << '\n';
-        sstr << "Phone:    " << user["phoneNumber"] << '\n';
-        sstr << "Address:  " << user["address"] << '\n';
+        sstr << "-- User #" << user["id"] << " (normal)\n";
+        sstr << "| Username: " << user["username"].get<std::string>() << '\n';
+        sstr << "| Balance:  " << user["balance"] << '\n';
+        sstr << "| Phone:    " << user["phone"].get<std::string>() << '\n';
+        sstr << "| Address:  " << user["address"].get<std::string>();
     }
     return sstr.str();
 }
@@ -145,16 +145,16 @@ std::string HotelClient::roomsInfo(bool onlyAvailable) {
     }
     std::ostringstream sstr;
     for (const auto& room : res["response"]) {
-        sstr << " -- Room #" << room["number"] << ":\n";
-        sstr << "Price: " << room["price"] << '\n';
-        sstr << "Max Capacity: " << room["maxCapacity"] << '\n';
+        sstr << "-- Room #" << room["number"].get<std::string>() << ":\n";
+        sstr << "| Price: " << room["price"] << '\n';
+        sstr << "| Max Capacity: " << room["maxCapacity"] << '\n';
         if (room.contains("reservations")) {
-            sstr << "Reservations:\n";
+            sstr << "| Reservations:\n";
             for (const auto& reservation : room["reservations"]) {
-                sstr << "   -- Reservation #" << reservation["id"] << ":\n";
-                sstr << "  Number of Beds: " << reservation["numOfBeds"] << '\n';
-                sstr << "  Check-in date:  " << reservation["checkInDate"] << '\n';
-                sstr << "  Check-out date: " << reservation["checkOutDate"] << '\n';
+                sstr << "| -- Reservation #" << reservation["id"] << ":\n";
+                sstr << "| Number of Beds: " << reservation["numOfBeds"] << '\n';
+                sstr << "| Check-in date:  " << reservation["checkInDate"].get<std::string>() << '\n';
+                sstr << "| Check-out date: " << reservation["checkOutDate"].get<std::string>() << '\n';
             }
         }
     }
@@ -197,7 +197,7 @@ std::string HotelClient::passDay(int numOfDays) {
 std::string HotelClient::editInfo(const std::string& password, const std::string& phone, const std::string& address) {
     auto req = requestJson("editInfo");
     req["arguments"] = {
-        {"password", password},
+        {"password", crypto::base64Encode(password)},
         {"phone", phone},
         {"address", address},
     };
