@@ -149,9 +149,11 @@ std::string HotelClient::roomsInfo(bool onlyAvailable) {
         sstr << "| Price: " << room["price"] << '\n';
         sstr << "| Max Capacity: " << room["maxCapacity"] << '\n';
         if (room.contains("reservations")) {
+            int resId = 1;
             sstr << "| Reservations:\n";
             for (const auto& reservation : room["reservations"]) {
-                sstr << "| -- Reservation #" << reservation["id"] << ":\n";
+                sstr << "| -- Reservation #" << resId++ << ":\n";
+                sstr << "| User ID: " << reservation["id"] << '\n';
                 sstr << "| Number of Beds: " << reservation["numOfBeds"] << '\n';
                 sstr << "| Check-in date:  " << reservation["checkInDate"].get<std::string>() << '\n';
                 sstr << "| Check-out date: " << reservation["checkOutDate"].get<std::string>() << '\n';

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <iomanip>
+#include <iostream>
 
 #include "crypto.hpp"
 #include "datetime.hpp"
@@ -709,7 +710,7 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
         };
     }
     refreshTokenAccessTime(token);
-    if (!hasArgument(request, "days")) {
+    if (!hasArgument(request, "numOfDays")) {
         return {
             {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
@@ -725,7 +726,7 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
             {"response", nullptr},
         };
     }
-    if (!request["arguments"]["days"].is_number_integer()) {
+    if (!request["arguments"]["numOfDays"].is_number_integer()) {
         return {
             {"status", StatusCode::InvalidValue},
             {"message", "Invalid days"},
@@ -733,8 +734,10 @@ nlohmann::json HotelManager::handlePassDay(const nlohmann::json& request) {
             {"response", nullptr},
         };
     }
-    int days = request["arguments"]["days"];
+    int days = request["arguments"]["numOfDays"];
     DateTime::increaseServerDate(days);
+    std::cout << "The server date is set to: "
+              << DateTime::toStr(DateTime::getServerDate()) << std::endl;
     checkOutExpiredReservations();
     return {
         {"status", StatusCode::OK},
@@ -821,6 +824,15 @@ nlohmann::json HotelManager::handleLeaveRoom(const nlohmann::json& request) {
         return {
             {"status", StatusCode::BadCommand},
             {"message", "Room not found"},
+            {"userId", std::to_string(userId)},
+            {"response", nullptr},
+        };
+    }
+    if (isAdministrator(userId)) {
+        makeRoomEmpty(roomNum);
+        return {
+            {"status", StatusCode::OK},
+            {"message", "Room emptied successfully"},
             {"userId", std::to_string(userId)},
             {"response", nullptr},
         };
@@ -938,8 +950,8 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
         };
     }
     if (!hasArgument(request, "roomNum") ||
-        !hasArgument(request, "maxCapacity") ||
-        !hasArgument(request, "price")) {
+        !hasArgument(request, "newMaxCapacity") ||
+        !hasArgument(request, "newPrice")) {
         return {
             {"status", StatusCode::BadRequest},
             {"message", "Not enough arguments provided"},
@@ -949,7 +961,7 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
     }
     auto& args = request["arguments"];
     std::string roomNum = args["roomNum"];
-    if (!args["maxCapacity"].is_number_integer() || !args["price"].is_number_integer()) {
+    if (!args["newMaxCapacity"].is_number_integer() || !args["newPrice"].is_number_integer()) {
         return {
             {"status", StatusCode::InvalidValue},
             {"message", "Invalid arguments"},
@@ -957,8 +969,8 @@ nlohmann::json HotelManager::handleModifyRoom(const nlohmann::json& request) {
             {"response", nullptr},
         };
     }
-    int maxCapacity = args["maxCapacity"];
-    int price = args["price"];
+    int maxCapacity = args["newMaxCapacity"];
+    int price = args["newPrice"];
     if (!doesRoomExist(roomNum)) {
         return {
             {"status", StatusCode::RoomNotFound},
@@ -1253,6 +1265,15 @@ void HotelManager::modifyRoom(const std::string& roomNum, int maxCapacity, int p
 void HotelManager::removeRoom(const std::string& roomNum) {
     rooms_.erase(roomNum);
     reservations_.erase(roomNum);
+    commitChanges();
+}
+
+void HotelManager::makeRoomEmpty(const std::string& roomNum) {
+    for (auto& reservation : std::vector<Reservation>(reservations_[roomNum])) {
+        if (reservation.hasConflict(DateTime::getServerDate())) {
+            reservations_[roomNum].erase(std::remove(reservations_[roomNum].begin(), reservations_[roomNum].end(), reservation), reservations_[roomNum].end());
+        }
+    }
     commitChanges();
 }
 

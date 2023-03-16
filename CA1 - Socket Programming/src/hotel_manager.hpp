@@ -114,6 +114,7 @@ private:
     void addRoom(const std::string& roomNum, int maxCapacity, int price);
     void modifyRoom(const std::string& roomNum, int maxCapacity, int price);
     void removeRoom(const std::string& roomNum);
+    void makeRoomEmpty(const std::string& roomNum);
     void cancelReservation(int userId, const std::string& roomNum, int numOfBeds);
     void bookRoom(int userId, const std::string& roomNum, int numOfBeds, date::year_month_day checkIn, date::year_month_day checkOut);
 };
