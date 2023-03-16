@@ -1,5 +1,6 @@
 #include "hotel_client.hpp"
 
+#include <filesystem>
 #include <json.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -10,7 +11,10 @@
 HotelClient::HotelClient(net::IpAddr host, net::Port port)
     : host_(host),
       port_(port),
-      socket_(net::Socket::Type::stream) {}
+      socket_(net::Socket::Type::stream),
+      logger_(Logger::Level::Info, logFile_) {
+    std::filesystem::create_directory(LOG_FOLDER);
+}
 
 bool HotelClient::connect() {
     return socket_.connect(host_, port_);
@@ -40,6 +44,15 @@ nlohmann::json HotelClient::getResponse(const nlohmann::json& req) {
     auto res = nlohmann::json::parse(resStr);
     if (res["status"] == StatusCode::Unauthorized) {
         userId_.clear();
+    }
+    else if (res["status"] == StatusCode::LoggedOut) {
+        logger_.info("Logged out from server.", __func__, res["status"]);
+    }
+    else if (isLoggedIn()) {
+        logger_.info("Got response from server.", __func__, res["status"], {
+                                                                              {"request", req.dump()},
+                                                                              {"response", res.dump()},
+                                                                          });
     }
     return res;
 }
@@ -77,6 +90,11 @@ std::string HotelClient::signin(const std::string& username, const std::string& 
     if (res["status"] == StatusCode::SignedIn) {
         userId_ = res["userId"];
         token_ = res["response"]["token"];
+        if (logFile_.is_open()) {
+            logFile_.close();
+        }
+        logFile_.open(LOG_FOLDER + "/" + username + ".log", std::ios::app);
+        logger_.info("Signed in to server.", __func__, res["status"]);
     }
     return statusMsg(res);
 }
@@ -249,6 +267,9 @@ std::string HotelClient::logout() {
     auto req = requestJson("logout");
     auto res = getResponse(req);
     userId_.clear();
+    if (logFile_.is_open()) {
+        logFile_.close();
+    }
     return statusMsg(res);
 }
 

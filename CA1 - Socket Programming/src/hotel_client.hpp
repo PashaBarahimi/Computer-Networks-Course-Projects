@@ -1,10 +1,14 @@
 #ifndef HOTEL_CLIENT_HPP_INCLUDE
 #define HOTEL_CLIENT_HPP_INCLUDE
 
+#include <fstream>
 #include <json.hpp>
 #include <string>
 
+#include "logger.hpp"
 #include "net.hpp"
+
+const std::string LOG_FOLDER = "client_logs";
 
 class HotelClient {
 public:
@@ -33,6 +37,9 @@ private:
     net::IpAddr host_;
     net::Port port_;
     net::Socket socket_;
+
+    std::ofstream logFile_;
+    Logger logger_;
 
     std::string token_;
     std::string userId_;
