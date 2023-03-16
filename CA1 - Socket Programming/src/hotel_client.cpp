@@ -167,9 +167,11 @@ std::string HotelClient::roomsInfo(bool onlyAvailable) {
         sstr << "| Price: " << room["price"] << '\n';
         sstr << "| Max Capacity: " << room["maxCapacity"] << '\n';
         if (room.contains("reservations")) {
+            int resId = 1;
             sstr << "| Reservations:\n";
             for (const auto& reservation : room["reservations"]) {
-                sstr << "| -- Reservation #" << reservation["id"] << ":\n";
+                sstr << "| -- Reservation #" << resId++ << ":\n";
+                sstr << "| User ID: " << reservation["id"] << '\n';
                 sstr << "| Number of Beds: " << reservation["numOfBeds"] << '\n';
                 sstr << "| Check-in date:  " << reservation["checkInDate"].get<std::string>() << '\n';
                 sstr << "| Check-out date: " << reservation["checkOutDate"].get<std::string>() << '\n';
@@ -177,7 +179,9 @@ std::string HotelClient::roomsInfo(bool onlyAvailable) {
         }
     }
     auto ret = sstr.str();
-    ret.pop_back();
+    if (!ret.empty()) {
+        ret.pop_back();
+    }
     return ret;
 }
 
@@ -191,6 +195,28 @@ std::string HotelClient::book(const std::string& roomNum, int numOfBeds, const s
     };
     auto res = getResponse(req);
     return statusMsg(res);
+}
+
+std::string HotelClient::showReservations() {
+    auto req = requestJson("showReservations");
+    auto res = getResponse(req);
+    if (res["status"] != StatusCode::OK) {
+        return statusMsg(res);
+    }
+    std::ostringstream sstr;
+    int resId = 1;
+    for (const auto& reservation : res["response"]) {
+        sstr << "-- Reservation #" << resId++ << ":\n";
+        sstr << "| Room Number: " << reservation["roomNum"].get<std::string>() << '\n';
+        sstr << "| Number of Beds: " << reservation["numOfBeds"] << '\n';
+        sstr << "| Check-in date:  " << reservation["checkInDate"].get<std::string>() << '\n';
+        sstr << "| Check-out date: " << reservation["checkOutDate"].get<std::string>() << '\n';
+    }
+    auto ret = sstr.str();
+    if (!ret.empty()) {
+        ret.pop_back();
+    }
+    return ret;
 }
 
 std::string HotelClient::cancel(const std::string& roomNum, int numOfBeds) {

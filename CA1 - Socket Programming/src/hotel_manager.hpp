@@ -80,6 +80,7 @@ private:
     nlohmann::json handleAllUsers(const nlohmann::json& request);
     nlohmann::json handleRoomsInfo(const nlohmann::json& request);
     nlohmann::json handleBook(const nlohmann::json& request);
+    nlohmann::json handleShowReservations(const nlohmann::json& request);
     nlohmann::json handleCancel(const nlohmann::json& request);
     nlohmann::json handlePassDay(const nlohmann::json& request);
     nlohmann::json handleEditInfo(const nlohmann::json& request);
@@ -92,6 +93,7 @@ private:
     nlohmann::json getUserInfo(int userId) const;
     nlohmann::json getAllUsers() const;
     nlohmann::json getRoomsInfo(bool onlyAvailable, bool showReservations) const;
+    nlohmann::json getCancelableReservations(int userId) const;
 
     bool isAdministrator(int userId) const;
     bool isPasswordCorrect(int userId, const std::string& password) const;
@@ -114,6 +116,7 @@ private:
     void addRoom(const std::string& roomNum, int maxCapacity, int price);
     void modifyRoom(const std::string& roomNum, int maxCapacity, int price);
     void removeRoom(const std::string& roomNum);
+    void makeRoomEmpty(const std::string& roomNum);
     void cancelReservation(int userId, const std::string& roomNum, int numOfBeds);
     void bookRoom(int userId, const std::string& roomNum, int numOfBeds, date::year_month_day checkIn, date::year_month_day checkOut);
 };
