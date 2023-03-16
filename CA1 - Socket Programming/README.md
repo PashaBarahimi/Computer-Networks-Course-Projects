@@ -417,7 +417,7 @@ public:
 ```
 
 This class uses the [HowardHinnant/date](https://github.com/HowardHinnant/date) library (which was added to the standard library in C++20) to store the server date in a `date::year_month_day` struct.  
-It is important to note that all of the functions provided by the DateTime class require the date to be in the format `YYYY-MM-DD` which is the ISO 8601 format. This is differs from the project requirements which requires the date to be in the format `DD-MM-YYYY`.
+It is important to note that all of the functions provided by the DateTime class require the date to be in the format `YYYY-MM-DD` which is the ISO 8601 format. This differs from the project requirements which requires the date to be in the format `DD-MM-YYYY`.
 
 The class can get the real current date or date-time, as well as the server special date.  
 The `toStr` methods allow the conversion from either a date or a date-time to a string. The `parse` method is the opposite and converts from a string to a date.
@@ -659,7 +659,9 @@ The server will send a response to the client after receiving a request. The res
     "userId": "user id",
     "response": {
         "key1": "value1",
-    }
+    },
+    "timestamp": "YYYY-MM-DD HH:MM:SS",
+    "serverDate": "YYYY-MM-DD"
 }
 ```
 
