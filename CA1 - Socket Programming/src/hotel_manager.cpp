@@ -204,11 +204,11 @@ void HotelManager::handleRequest(const nlohmann::json& request, net::Socket* cli
         logger_.error("Failed to send response", __func__);
         return;
     }
-    logger_.info("Responded to request", __func__, -1, {
-                                                           {"status", response["status"]},
-                                                           {"message", response["message"]},
-                                                           {"user", response["user"]},
-                                                       });
+    logger_.info("Responded to request", __func__,
+                 response["status"], {
+                                         {"message", response["message"]},
+                                         {"user", response["user"]},
+                                     });
 }
 
 std::string HotelManager::generateTokenForUser(int userId) {
@@ -277,17 +277,21 @@ void HotelManager::commitChanges() {
 }
 
 void HotelManager::commitUsers() {
-    nlohmann::json users;
+    nlohmann::json j;
+    j["users"] = nlohmann::json::array();
+    auto& users = j["users"];
     for (const auto& user : users_) {
         users.push_back(user.toJson());
     }
     std::ofstream usersFile(USERS_FILE);
-    usersFile << std::setw(4) << users;
+    usersFile << std::setw(4) << j;
     logger_.info("Users committed", __func__);
 }
 
 void HotelManager::commitRooms() {
-    nlohmann::json rooms;
+    nlohmann::json j;
+    j["rooms"] = nlohmann::json::array();
+    auto& rooms = j["rooms"];
     for (const auto& room : rooms_) {
         auto roomJson = room.second.toJson();
         roomJson["users"] = nlohmann::json::array();
@@ -300,7 +304,7 @@ void HotelManager::commitRooms() {
         rooms.push_back(roomJson);
     }
     std::ofstream roomsFile(ROOMS_FILE);
-    roomsFile << std::setw(4) << rooms;
+    roomsFile << std::setw(4) << j;
     logger_.info("Rooms committed", __func__);
 }
 

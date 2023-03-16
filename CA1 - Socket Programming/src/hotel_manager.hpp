@@ -106,9 +106,9 @@ private:
     int findUser(const std::string& username) const;
     int getUser(const std::string& token);
     int getRoomCapacity(const std::string& roomNum) const;
-    void addUser(const std::string& username, const std::string& password, int balance, const std::string& email, const std::string& phone);
+    void addUser(const std::string& username, const std::string& password, int balance, const std::string& address, const std::string& phone);
     void logoutUser(const std::string& token);
-    void editUser(int userId, const std::string& password, const std::string& email, const std::string& phone);
+    void editUser(int userId, const std::string& password, const std::string& address, const std::string& phone);
     void checkOutExpiredReservations();
     void leaveRoom(int userId, const std::string& roomNum);
     void addRoom(const std::string& roomNum, int maxCapacity, int price);
