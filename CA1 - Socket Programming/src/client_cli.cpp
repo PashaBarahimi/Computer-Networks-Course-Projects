@@ -59,7 +59,7 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
             else {
                 out << "Username is available." << std::endl;
             }
-            std::string password, phone, email;
+            std::string password, phone, address;
             int balance;
             if (!inputPassword(out, password)) {
                 return;
@@ -68,8 +68,8 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
                 return;
             }
             phone = getInput(out, "Enter your phone number: ");
-            email = getInput(out, "Enter your email: ");
-            out << client_.signup(username, password, balance, phone, email) << std::endl;
+            address = getInput(out, "Enter your address: ");
+            out << client_.signup(username, password, balance, phone, address) << std::endl;
             checkMainMenuItems();
         },
         "Signup (usage: signup <username>)"));
@@ -101,13 +101,13 @@ std::unique_ptr<cli::Menu> ClientCLI::createMainMenu() {
 
     userMenu_.push_back(mainMenu->Insert(
         "EditInfo", [this](std::ostream& out) {
-            std::string password, phone, email;
+            std::string password, phone, address;
             if (!inputPassword(out, password)) {
                 return;
             }
             phone = getInput(out, "Enter your phone number: ");
-            email = getInput(out, "Enter your email: ");
-            out << client_.editInfo(password, phone, email) << std::endl;
+            address = getInput(out, "Enter your address: ");
+            out << client_.editInfo(password, phone, address) << std::endl;
             checkMainMenuItems();
         },
         "Edit user information (usage: EditInfo)"));

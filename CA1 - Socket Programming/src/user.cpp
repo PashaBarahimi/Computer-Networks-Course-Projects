@@ -36,7 +36,7 @@ int User::getBalance() const { return balance_; }
 nlohmann::json User::toJson(bool includePassword) const {
     nlohmann::json j;
     j["id"] = id_;
-    j["name"] = username_;
+    j["username"] = username_;
     if (includePassword) {
         j["password"] = password_;
     }
