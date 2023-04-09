@@ -2,4 +2,4 @@
 /*
 !.gitignore
 !subdir/
-!scratch-simulator.cc
+!*.cc
