@@ -5,6 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "(gdb) Run",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/scratch/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Run",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "./build/lib/"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "(gdb) Launch from scratch",
             "type": "cppdbg",
             "request": "launch",
@@ -28,8 +53,8 @@
                     "ignoreFailures": true
                 }
             ]
-         },
-         {
+        },
+        {
             "name": "(lldb) Launch from scratch",
             "type": "cppdbg",
             "request": "launch",
@@ -46,13 +71,15 @@
             ],
             "externalConsole": false,
             "MIMode": "lldb"
-         },
-         {
+        },
+        {
             "name": "(gdb) Launch testrunner",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/utils/ns3-dev-test-runner-debug",
-            "args": ["--suite=${selectedText}"],
+            "args": [
+                "--suite=${selectedText}"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build",
@@ -71,13 +98,15 @@
                     "ignoreFailures": true
                 }
             ]
-         },
-         {
+        },
+        {
             "name": "(lldb) Launch testrunner",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/utils/ns3-dev-test-runner-debug",
-            "args": ["--suite=${selectedText}"],
+            "args": [
+                "--suite=${selectedText}"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build",
@@ -89,6 +118,6 @@
             ],
             "externalConsole": false,
             "MIMode": "lldb"
-         }
+        }
     ]
 }

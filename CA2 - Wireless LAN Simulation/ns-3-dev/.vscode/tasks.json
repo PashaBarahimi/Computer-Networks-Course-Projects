@@ -13,6 +13,15 @@
             }
         },
         {
+            "label": "Run",
+            "type": "shell",
+            "command": "./waf --run \"${fileBasenameNoExtension}\"",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "Run tests",
             "type": "shell",
             "command": "./test.py",
