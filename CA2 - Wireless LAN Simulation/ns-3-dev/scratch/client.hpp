@@ -16,7 +16,7 @@ public:
     virtual ~Client() = default;
 
 private:
-    virtual void StartApplication(void);
+    void StartApplication(void) override;
 
     uint16_t port;
     Ptr<Socket> socket;

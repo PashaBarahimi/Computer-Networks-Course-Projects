@@ -15,7 +15,7 @@ public:
     virtual ~Master() = default;
 
 private:
-    virtual void StartApplication(void);
+    void StartApplication(void) override;
     void HandleRead(Ptr<Socket> socket);
 
     uint16_t port;

@@ -14,11 +14,11 @@ public:
     void SetData(uint16_t data);
     uint16_t GetData(void) const;
     static TypeId GetTypeId(void);
-    virtual TypeId GetInstanceTypeId(void) const;
-    virtual void Print(std::ostream& os) const;
-    virtual void Serialize(Buffer::Iterator start) const;
-    virtual uint32_t Deserialize(Buffer::Iterator start);
-    virtual uint32_t GetSerializedSize(void) const;
+    TypeId GetInstanceTypeId(void) const override;
+    void Print(std::ostream& os) const override;
+    void Serialize(Buffer::Iterator start) const override;
+    uint32_t Deserialize(Buffer::Iterator start) override;
+    uint32_t GetSerializedSize(void) const override;
 
 private:
     uint16_t m_data;
