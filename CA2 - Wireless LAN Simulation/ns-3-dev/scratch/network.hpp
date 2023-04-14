@@ -91,7 +91,7 @@ void Network::Setup() {
 
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
-    clientApp_ = CreateObject<Client>(consts::CLIENT_PORT, staNodesMasterInterface_); // mind the port and interface
+    clientApp_ = CreateObject<Client>(consts::MASTER_PORT, staNodesMasterInterface_); // mind the port and interface
     wifiStaNodeClient_.Get(0)->AddApplication(clientApp_);
     masterApp_ = CreateObject<Master>(consts::MASTER_PORT, staNodesMasterInterface_);
     wifiStaNodeMaster_.Get(0)->AddApplication(masterApp_);

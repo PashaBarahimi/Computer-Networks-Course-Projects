@@ -18,21 +18,21 @@ private:
     void StartApplication(void) override;
     void HandleRead(Ptr<Socket> socket);
 
-    uint16_t port;
-    Ipv4InterfaceContainer ip;
-    Ptr<Socket> socket;
+    uint16_t port_;
+    Ipv4InterfaceContainer ip_;
+    Ptr<Socket> socket_;
 };
 
-Master::Master(uint16_t port, Ipv4InterfaceContainer& ip) : port(port), ip(ip) {
+Master::Master(uint16_t port, Ipv4InterfaceContainer& ip) : port_(port), ip_(ip) {
     std::srand(time(nullptr));
 }
 
 void Master::StartApplication(void) {
-    socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-    InetSocketAddress local = InetSocketAddress(ip.GetAddress(0), port);
-    socket->Bind(local);
+    socket_ = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
+    InetSocketAddress local = InetSocketAddress(ip_.GetAddress(0), port_);
+    socket_->Bind(local);
 
-    socket->SetRecvCallback(MakeCallback(&Master::HandleRead, this));
+    socket_->SetRecvCallback(MakeCallback(&Master::HandleRead, this));
 }
 
 void Master::HandleRead(Ptr<Socket> socket) {
@@ -43,7 +43,7 @@ void Master::HandleRead(Ptr<Socket> socket) {
             break;
         }
 
-        MisashaHeader destinationHeader;
+        ClientHeader destinationHeader;
         packet->RemoveHeader(destinationHeader);
         destinationHeader.Print(std::cout);
     }

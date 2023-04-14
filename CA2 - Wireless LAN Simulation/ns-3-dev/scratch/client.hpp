@@ -12,24 +12,25 @@ using namespace ns3;
 
 class Client : public Application {
 public:
-    Client(uint16_t port, Ipv4InterfaceContainer& ip);
+    Client(uint16_t masterPort, Ipv4InterfaceContainer& ip);
     virtual ~Client() = default;
 
 private:
+    static void GenerateTraffic(Ptr<Socket> socket, uint16_t data);
     void StartApplication(void) override;
 
-    uint16_t port;
-    Ptr<Socket> socket;
-    Ipv4InterfaceContainer ip;
+    uint16_t masterPort_;
+    Ptr<Socket> socket_;
+    Ipv4InterfaceContainer masterIp_;
 };
 
-Client::Client(uint16_t port, Ipv4InterfaceContainer& ip) : port(port), ip(ip) {
+Client::Client(uint16_t masterPort, Ipv4InterfaceContainer& ip) : masterPort_(masterPort), masterIp_(ip) {
     std::srand(time(nullptr));
 }
 
-static void GenerateTraffic(Ptr<Socket> socket, uint16_t data) {
+void Client::GenerateTraffic(Ptr<Socket> socket, uint16_t data) {
     Ptr<Packet> packet = new Packet();
-    MisashaHeader m;
+    ClientHeader m;
     m.SetData(data);
 
     packet->AddHeader(m);
@@ -40,11 +41,11 @@ static void GenerateTraffic(Ptr<Socket> socket, uint16_t data) {
 }
 
 void Client::StartApplication(void) {
-    Ptr<Socket> sock = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-    InetSocketAddress sockAddr(ip.GetAddress(0), port);
-    sock->Connect(sockAddr);
+    socket_ = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
+    InetSocketAddress sockAddr(masterIp_.GetAddress(0), masterPort_);
+    socket_->Connect(sockAddr);
 
-    GenerateTraffic(sock, 0);
+    GenerateTraffic(socket_, 0);
 }
 
 #endif // CLIENT_HPP_INCLUDE

@@ -7,10 +7,10 @@
 
 using namespace ns3;
 
-class MisashaHeader : public Header {
+class ClientHeader : public Header {
 public:
-    MisashaHeader() = default;
-    virtual ~MisashaHeader() = default;
+    ClientHeader() = default;
+    virtual ~ClientHeader() = default;
     void SetData(uint16_t data);
     uint16_t GetData(void) const;
     static TypeId GetTypeId(void);
@@ -21,43 +21,43 @@ public:
     uint32_t GetSerializedSize(void) const override;
 
 private:
-    uint16_t m_data;
+    uint16_t mData_;
 };
 
-TypeId MisashaHeader::GetTypeId(void) {
+TypeId ClientHeader::GetTypeId(void) {
     static TypeId tid =
-        TypeId("ns3::MisashaHeader").SetParent<Header>().AddConstructor<MisashaHeader>();
+        TypeId("ns3::ClientHeader").SetParent<Header>().AddConstructor<ClientHeader>();
     return tid;
 }
 
-TypeId MisashaHeader::GetInstanceTypeId(void) const {
+TypeId ClientHeader::GetInstanceTypeId(void) const {
     return GetTypeId();
 }
 
-void MisashaHeader::Print(std::ostream& os) const {
-    os << "data = " << m_data << std::endl;
+void ClientHeader::Print(std::ostream& os) const {
+    os << "data = " << mData_ << std::endl;
 }
 
-uint32_t MisashaHeader::GetSerializedSize(void) const {
+uint32_t ClientHeader::GetSerializedSize(void) const {
     return consts::HEADER_LENGTH;
 }
 
-void MisashaHeader::Serialize(Buffer::Iterator start) const {
-    start.WriteHtonU16(m_data);
+void ClientHeader::Serialize(Buffer::Iterator start) const {
+    start.WriteHtonU16(mData_);
 }
 
-uint32_t MisashaHeader::Deserialize(Buffer::Iterator start) {
-    m_data = start.ReadNtohU16();
+uint32_t ClientHeader::Deserialize(Buffer::Iterator start) {
+    mData_ = start.ReadNtohU16();
 
     return consts::HEADER_LENGTH;
 }
 
-void MisashaHeader::SetData(uint16_t data) {
-    m_data = data;
+void ClientHeader::SetData(uint16_t data) {
+    mData_ = data;
 }
 
-uint16_t MisashaHeader::GetData(void) const {
-    return m_data;
+uint16_t ClientHeader::GetData(void) const {
+    return mData_;
 }
 
 #endif // HEADER_HPP_INCLUDE
