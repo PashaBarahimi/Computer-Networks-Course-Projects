@@ -1,13 +1,14 @@
 #ifndef CONSTANTS_HPP_INCLUDE
 #define CONSTANTS_HPP_INCLUDE
 
+#include <array>
 #include <cstdint>
 #include <string>
 
 namespace consts {
 
 // header
-constexpr uint32_t HEADER_LENGTH = 2;
+constexpr uint32_t CLIENT_HEADER_LENGTH = 8;
 
 // client
 constexpr double TRAFFIC_GENERATION_TIME_INTERVAL = 0.1;
@@ -15,6 +16,10 @@ constexpr uint16_t CLIENT_PORT = 1102;
 
 // master
 constexpr uint16_t MASTER_PORT = 1102;
+
+// mappers
+constexpr uint32_t MAPPERS_COUNT = 3;
+const std::array<uint16_t, MAPPERS_COUNT> MAPPER_PORTS = {1102, 1102, 1102};
 
 // network
 const std::string SSID = "ns-3-ssid";
