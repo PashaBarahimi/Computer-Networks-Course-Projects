@@ -85,4 +85,58 @@ uint32_t ClientHeader::GetSerializedSize(void) const {
     return consts::CLIENT_HEADER_LENGTH;
 }
 
+class MapperHeader : public Header {
+public:
+    MapperHeader() = default;
+    virtual ~MapperHeader() = default;
+
+    static TypeId GetTypeId(void);
+    TypeId GetInstanceTypeId(void) const override;
+
+    void SetData(char data);
+    char GetData(void) const;
+
+    void Print(std::ostream& os) const override;
+    void Serialize(Buffer::Iterator start) const override;
+    uint32_t Deserialize(Buffer::Iterator start) override;
+    uint32_t GetSerializedSize(void) const override;
+
+private:
+    char mData_;
+};
+
+TypeId MapperHeader::GetTypeId(void) {
+    static TypeId tid = TypeId("ns3::MapperHeader").SetParent<Header>().AddConstructor<MapperHeader>();
+    return tid;
+}
+
+TypeId MapperHeader::GetInstanceTypeId(void) const {
+    return GetTypeId();
+}
+
+void MapperHeader::SetData(char data) {
+    mData_ = data;
+}
+
+char MapperHeader::GetData(void) const {
+    return mData_;
+}
+
+void MapperHeader::Print(std::ostream& os) const {
+    os << mData_ << std::endl;
+}
+
+void MapperHeader::Serialize(Buffer::Iterator start) const {
+    start.WriteU8(mData_);
+}
+
+uint32_t MapperHeader::Deserialize(Buffer::Iterator start) {
+    mData_ = start.ReadU8();
+    return consts::MAPPER_HEADER_LENGTH;
+}
+
+uint32_t MapperHeader::GetSerializedSize(void) const {
+    return consts::MAPPER_HEADER_LENGTH;
+}
+
 #endif // HEADER_HPP_INCLUDE
