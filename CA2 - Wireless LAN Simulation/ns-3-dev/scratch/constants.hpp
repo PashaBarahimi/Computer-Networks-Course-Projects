@@ -28,21 +28,30 @@ const char* NET_MASK = "255.255.255.0";
 
 // simulation
 constexpr double ERROR = 0.000001;
-constexpr double DURATION = 60.0;
-constexpr double MONITOR_TIME_INTERVAL = 10.0;
+constexpr double DURATION = 10.0;
+constexpr double SIMULATION_DURATION = DURATION;
+constexpr double MONITOR_TIME_INTERVAL = 1.0;
 constexpr double TIMEOUT = 0.1;
 constexpr double BURSTY_DATA_SEND_INTERVAL = 0.001;
+constexpr double DELTA_X = 5.0;
+constexpr double DELTA_Y = 10.0;
+constexpr uint32_t GRID_WIDTH = 3;
 constexpr bool VERBOSE_DEFAULT = true;
-constexpr bool TRACING_DEFAULT = false;
 
 // data
 constexpr bool RANDOM_DATA = false;
 constexpr bool BURSTY_DATA = false;
+constexpr bool SHUFFLE_MAPPINGS = false;
 const std::string VALID_CHARACTERS = RANDOM_DATA ? "abcdefghijklmnopqrstuvwxyz"
                                                  : "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                    "abcdefghijklmnopqrstuvwxyz"
                                                    "0123456789"
                                                    " _-.,:;!?()";
+const std::string MESSAGE =
+    "This is a sample text that is written to test the "
+    "network which is being simulated using ns-3.35. It"
+    " is worth noting that this text will be repeated. "
+    "WELCOME TO PROJECT MISASHA (Misagh and Pasha)";
 
 } // namespace consts
 
