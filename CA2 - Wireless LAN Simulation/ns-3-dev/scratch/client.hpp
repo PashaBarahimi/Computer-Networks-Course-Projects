@@ -23,7 +23,6 @@ private:
     static void Timeout(Client* client);
     void HandleRead(Ptr<Socket> socket);
     void StartApplication(void) override;
-    // void StopApplication(void) override;
     uint16_t GetData();
 
     uint16_t port_;
@@ -66,11 +65,6 @@ void Client::StartApplication(void) {
 
     GenerateTraffic(this, GetData());
 }
-
-// void Client::StopApplication(void) {
-//     std::cout << "Data Received: " << std::endl;
-//     std::cout << dataReceived_ << std::endl;
-// }
 
 void Client::GenerateTraffic(Client* client, uint16_t data) {
     Ptr<Packet> packet = Create<Packet>();
