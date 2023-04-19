@@ -9,9 +9,9 @@ namespace consts {
 
 // header
 constexpr uint32_t CLIENT_HEADER_LENGTH = 8;
+constexpr uint32_t MAPPER_HEADER_LENGTH = 1;
 
 // client
-constexpr double TRAFFIC_GENERATION_TIME_INTERVAL = 0.1;
 constexpr uint16_t CLIENT_PORT = 1102;
 
 // master
@@ -30,8 +30,19 @@ const char* NET_MASK = "255.255.255.0";
 constexpr double ERROR = 0.000001;
 constexpr double DURATION = 60.0;
 constexpr double MONITOR_TIME_INTERVAL = 10.0;
+constexpr double TIMEOUT = 0.1;
+constexpr double BURSTY_DATA_SEND_INTERVAL = 0.001;
 constexpr bool VERBOSE_DEFAULT = true;
 constexpr bool TRACING_DEFAULT = false;
+
+// data
+constexpr bool RANDOM_DATA = false;
+constexpr bool BURSTY_DATA = false;
+const std::string VALID_CHARACTERS = RANDOM_DATA ? "abcdefghijklmnopqrstuvwxyz"
+                                                 : "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                                   "abcdefghijklmnopqrstuvwxyz"
+                                                   "0123456789"
+                                                   " _-.,:;!?()";
 
 } // namespace consts
 
