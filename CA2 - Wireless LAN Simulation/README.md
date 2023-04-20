@@ -18,6 +18,8 @@
     - [Sockets](#sockets)
     - [Accept Callback](#accept-callback)
     - [Receive Callback](#receive-callback)
+    - [Simulation](#simulation)
+  - [Results](#results)
 
 ## Introduction
 
@@ -219,3 +221,167 @@ void Class::HandleRead(Ptr<Socket> socket) {
 ```
 
 This is how received packets are handled. Wanted data should be in the header and it is extracted from the packet.
+
+### Simulation
+
+First of all, a node is created:
+
+```cpp
+NodeContainer node;
+node.Create(1);
+```
+
+Now we setup the Wi-Fi channel:
+
+```cpp
+YansWifiChannelHelper channel;
+YansWifiPhyHelper phy;
+WifiHelper wifi;
+
+phy.SetChannel(channel.Create());
+wifi.SetRemoteStationManager("ns3::AarfWifiManager");
+phy.SetErrorRateModel("ns3::YansErrorRateModel");
+```
+
+Install wireless devices:
+
+```cpp
+WifiMacHelper mac;
+NetDeviceContainer nodeDevice;
+
+mac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "ActiveProbing", BooleanValue(false));
+nodeDevice = wifi.Install(phy, mac, node);
+```
+
+Now the node should be placed:
+
+```cpp
+MobilityHelper mobility;
+mobility.SetPositionAllocator("ns3::GridPositionAllocator",
+                               "MinX", DoubleValue(0.0),
+                               "MinY", DoubleValue(0.0),
+                               "DeltaX", DoubleValue(DELTA_X),
+                               "DeltaY", DoubleValue(DELTA_Y),
+                               "GridWidth", UintegerValue(GRID_WIDTH),
+                               "LayoutType", StringValue("RowFirst"));
+
+mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+mobility.Install(node);
+```
+
+Install the TCP/IP stack:
+
+```cpp
+InternetStackHelper stack;
+stack.Install(node);
+```
+
+Assign IP addresses:
+
+```cpp
+Ipv4AddressHelper addrHelper;
+Ipv4InterfaceContainer ipAddr;
+
+addrHelper.SetBase("10.1.3.0", "255.255.255.0"); // Base address & net mask
+ipAddr = addrHelper.Assign(nodeDevice);
+
+Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+```
+
+Create the applications:
+
+```cpp
+Ptr<App> app; // App is a subclass of Application
+app = CreateObject<App>(ipAddr, port); // ip and port are passed to the constructor
+```
+
+Set application start and stop time:
+
+```cpp
+app->SetStartTime(Seconds(0.0));
+app->SetStopTime(Seconds(10.0));
+```
+
+Set simulator stop time and start the simulation:
+
+```cpp
+Simulator::Stop(Seconds(10.0));
+Simulator::Run();
+```
+
+## Results
+
+The program can be run in multiple modes:
+
+- Data Flow:
+  - `Bursty` - The client sends data in bursts.
+  - `Timed` - The client waits for the mapping result and then sends the next data.
+- Data Generation:
+  - `Random` - The client generates random data.
+  - `Fixed` - The client iterates the given input vector.
+- Mappings:
+  - `Normal` - The mapping is done with the exact order of characters in `consts::VALID_CHARACTERS`.
+  - `Shuffled` - The mapping is done with a shuffled order of characters in `consts::VALID_CHARACTERS`.
+
+In the `Fixed` mode, the client sends the sequence of data which maps to the following string which is defined in `consts::MESSAGE`:
+
+```text
+This is a sample text that is written to test the 
+network which is being simulated using ns-3.35. It
+is worth noting that this text will be repeated. 
+WELCOME TO PROJECT MISASHA (Misagh and Pasha). 
+```
+
+The client will print every character it receives from the mapper:
+
+![ReceivedChars](./assets/received_chars.png)
+
+Every 1.0s (`consts::MONITOR_TIME_INTERVAL`), the `DelayAndThroughputMonitor` function is called which prints the delay and throughput of the flows.  
+
+It contains the following parts:
+
+- FlowID
+- Source IP
+- Destination IP
+- Tx Packets (number of packets sent)
+- Rx Packets (number of packets received)
+- Duration (time elapsed since the first packet was sent)
+- Last Received Packet (time of the last received packet)
+- Throughput:
+  $$Throughput = \frac{Rx Packets\times 8 (bits)}{Duration\times 1024\times 1024}$$
+- Sum of e2e delays (sum of delays from the time a packet is sent to the time it is received)
+- Average e2e delay (sum of e2e delays divided by the number of received packets)
+
+The result consists of 10 flows which is described as follows (`Timed` and `Fixed` modes are used):
+
+- Flow 1: Client to Master
+
+  ![Flow1](./assets/flow1.png)
+
+  As we can see, 6848 packets were sent and 6846 packets were received. The throughput is about 0.21 Mbps and it can be calculated as mentioned above. The average delay is about 0.1 ms.
+
+- Flow 2, 3, 4: Master to Mappers
+
+  ![Flow2-3-4](./assets/flow2-3-4.png)
+
+  Master has received 6840 packets that should be sent to the mappers. As a result, all 6840 packets are sent to all mappers. The throughput is about 0.35 Mbps for each flow. However, the average delay grows linearly with the number of mappers. This is because the master sends the packet to first mapper and then waits for the acknowledgement. After the acknowledgement is received, the master sends the packet to the second mapper and so on.
+
+- Flow 5, 6, 7: Mappers to Master
+
+  ![Flow5-6-7](./assets/flow5-6-7.png)
+
+  Mappers have received 6840 packets and sent 3420 acknowledgements (half of the packets) to the master. The throughput is about 0.17 Mbps for each flow.
+
+- Flow 8, 9, 10: Mappers to Client
+
+  ![Flow8-9-10](./assets/flow8-9-10.png)
+
+  Mappers have received 6840 packets. However, each packet is mapped in a single mapper and the other two mappers will just ignore the packet. If the mapper has the mapping for the packet, it will send the mapped data to the client. 6838 packets are sent from the mappers to the client. The problem is that the mapping is not equally partitioned based on the message. As a result, the The number of successfully mapped packets are significantly different for each mapper. The throughput is about 0.12 Mbps for the first mapper. We can fix this by sending a random data:
+
+  ![Flow8-9-10-random](./assets/flow8-9-10-random.png)
+
+  As we can see, the number of successfully mapped packets are almost the same for each mapper. The throughput 0.06 Mbps for each mapper.
+
+The whole message received by the client in the simulation will also be printed at the end of the simulation:
+
+![ReceivedMessage](./assets/received_message.png)
