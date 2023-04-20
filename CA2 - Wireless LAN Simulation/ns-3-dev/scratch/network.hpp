@@ -51,7 +51,7 @@ private:
     void SetupWifi();
     void SetupNodes();
 
-    static void DelayAndThroughputMonitor(FlowMonitorHelper* fmhelper, Ptr<FlowMonitor> flowMon, double em);
+    static void DelayAndThroughputMonitor(FlowMonitorHelper* fmhelper, Ptr<FlowMonitor> flowMon);
 };
 
 Network::Network(bool verbose, const std::vector<uint16_t>& clientSendData, const std::vector<std::unordered_map<uint16_t, char>>& mappings)
@@ -146,53 +146,38 @@ void Network::Simulate() {
     Ptr<FlowMonitor> flowMonitor;
     FlowMonitorHelper flowHelper;
     flowMonitor = flowHelper.InstallAll();
-    DelayAndThroughputMonitor(&flowHelper, flowMonitor, consts::ERROR);
+    DelayAndThroughputMonitor(&flowHelper, flowMonitor);
 
     Simulator::Stop(Seconds(consts::SIMULATION_DURATION));
     Simulator::Run();
 }
 
-void Network::DelayAndThroughputMonitor(FlowMonitorHelper* fmhelper, Ptr<FlowMonitor> flowMon, double em) {
-    uint16_t i = 0;
-    std::map<FlowId, FlowMonitor::FlowStats> flowStats = flowMon->GetFlowStats();
+void Network::DelayAndThroughputMonitor(FlowMonitorHelper* fmhelper, Ptr<FlowMonitor> flowMon) {
     Ptr<Ipv4FlowClassifier> classing = DynamicCast<Ipv4FlowClassifier>(fmhelper->GetClassifier());
 
-    for (auto stats = flowStats.begin(); stats != flowStats.end(); ++stats) {
-        std::cout << "---------------------------------------------------------------------------"
-                  << std::endl;
+    for (const auto& s : flowMon->GetFlowStats()) {
+        FlowId id = s.first;
+        const FlowMonitor::FlowStats& stats = s.second;
 
-        Ipv4FlowClassifier::FiveTuple fiveTuple = classing->FindFlow(stats->first);
+        auto duration = stats.timeLastRxPacket.GetSeconds() -
+                        stats.timeFirstTxPacket.GetSeconds();
+        auto throughput = stats.rxBytes * 8.0 / duration;
+        auto fiveTuple = classing->FindFlow(id);
 
-        std::cout << "Flow ID               : " << stats->first << " ; "
-                  << fiveTuple.sourceAddress << " -----> " << fiveTuple.destinationAddress
-                  << std::endl;
-        std::cout << "Tx Packets            : " << stats->second.txPackets << std::endl;
-        std::cout << "Rx Packets            : " << stats->second.rxPackets << std::endl;
-        std::cout << "Duration              : "
-                  << (stats->second.timeLastRxPacket.GetSeconds() -
-                      stats->second.timeFirstTxPacket.GetSeconds())
-                  << std::endl;
-        std::cout << "Last Received Packet  : " << stats->second.timeLastRxPacket.GetSeconds()
-                  << " Seconds" << std::endl;
-        std::cout << "Throughput            : "
-                  << stats->second.rxBytes * 8.0 /
-                         (stats->second.timeLastRxPacket.GetSeconds() -
-                          stats->second.timeFirstTxPacket.GetSeconds()) /
-                         1024 / 1024
-                  << " Mbps" << std::endl;
-        std::cout << "Sum of e2e Delay      : " << stats->second.delaySum.GetSeconds() << "s"
-                  << std::endl;
-        std::cout << "Average of e2e Delay  : "
-                  << stats->second.delaySum.GetSeconds() / stats->second.rxPackets << "s"
-                  << std::endl;
-
-        i++;
-
-        std::cout << "---------------------------------------------------------------------------"
-                  << std::endl;
+        std::cout << "---------------------------------------------------------------------------" << std::endl;
+        std::cout << "Flow ID              : " << id << " ; "
+                  << fiveTuple.sourceAddress << " -----> " << fiveTuple.destinationAddress << std::endl;
+        std::cout << "Tx Packets           : " << stats.txPackets << std::endl;
+        std::cout << "Rx Packets           : " << stats.rxPackets << std::endl;
+        std::cout << "Duration             : " << duration << std::endl;
+        std::cout << "Last Received Packet : " << stats.timeLastRxPacket.GetSeconds() << " Seconds" << std::endl;
+        std::cout << "Throughput           : " << throughput / (1024 * 1024) << " Mbps" << std::endl;
+        std::cout << "Sum of e2e Delay     : " << stats.delaySum.GetSeconds() << "s" << std::endl;
+        std::cout << "Average of e2e Delay : " << stats.delaySum.GetSeconds() / stats.rxPackets << "s" << std::endl;
+        std::cout << "---------------------------------------------------------------------------" << std::endl;
     }
 
-    Simulator::Schedule(Seconds(consts::MONITOR_TIME_INTERVAL), &DelayAndThroughputMonitor, fmhelper, flowMon, em);
+    Simulator::Schedule(Seconds(consts::MONITOR_TIME_INTERVAL), &DelayAndThroughputMonitor, fmhelper, flowMon);
 }
 
 #endif // NETWORK_HPP_INCLUDE

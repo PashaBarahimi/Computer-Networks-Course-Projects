@@ -24,6 +24,7 @@ private:
     uint16_t port_;
     Ipv4InterfaceContainer ip_;
     Ptr<Socket> socket_;
+    Ptr<Socket> clientSocket_;
     unsigned idx_;
     std::unordered_map<uint16_t, char> map_;
 };
@@ -36,12 +37,13 @@ Mapper::Mapper(uint16_t port, Ipv4InterfaceContainer& ip, unsigned idx, const st
 
 void Mapper::StartApplication(void) {
     socket_ = Socket::CreateSocket(GetNode(), TcpSocketFactory::GetTypeId());
-    InetSocketAddress local = InetSocketAddress(ip_.GetAddress(idx_), port_);
+    InetSocketAddress local(ip_.GetAddress(idx_), port_);
     socket_->Bind(local);
     socket_->Listen();
-
     socket_->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address&>(),
                                MakeCallback(&Mapper::HandleAccept, this));
+
+    clientSocket_ = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 }
 
 void Mapper::SendMappedData(char data, Ipv4Address ip, uint16_t port) {
@@ -51,11 +53,8 @@ void Mapper::SendMappedData(char data, Ipv4Address ip, uint16_t port) {
     Ptr<Packet> packet = Create<Packet>();
     packet->AddHeader(header);
 
-    Ptr<Socket> socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-    InetSocketAddress destination = InetSocketAddress(ip, port);
-    socket->Connect(destination);
-    socket->Send(packet);
-    socket->Close();
+    InetSocketAddress destination(ip, port);
+    clientSocket_->SendTo(packet, 0, destination);
 }
 
 char Mapper::Map(uint16_t data) const {
@@ -68,7 +67,7 @@ char Mapper::Map(uint16_t data) const {
 void Mapper::HandleRead(Ptr<Socket> socket) {
     Ptr<Packet> packet;
 
-    while ((packet = socket->Recv())) {
+    while (packet = socket->Recv()) {
         if (packet->GetSize() == 0) {
             break;
         }
