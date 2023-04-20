@@ -24,6 +24,7 @@ private:
     uint16_t port_;
     Ipv4InterfaceContainer ip_;
     Ptr<Socket> socket_;
+    Ptr<Socket> clientSocket_;
     unsigned idx_;
     std::unordered_map<uint16_t, char> map_;
 };
@@ -39,9 +40,10 @@ void Mapper::StartApplication(void) {
     InetSocketAddress local(ip_.GetAddress(idx_), port_);
     socket_->Bind(local);
     socket_->Listen();
-
     socket_->SetAcceptCallback(MakeNullCallback<bool, Ptr<Socket>, const Address&>(),
                                MakeCallback(&Mapper::HandleAccept, this));
+
+    clientSocket_ = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
 }
 
 void Mapper::SendMappedData(char data, Ipv4Address ip, uint16_t port) {
@@ -51,11 +53,8 @@ void Mapper::SendMappedData(char data, Ipv4Address ip, uint16_t port) {
     Ptr<Packet> packet = Create<Packet>();
     packet->AddHeader(header);
 
-    Ptr<Socket> socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
     InetSocketAddress destination(ip, port);
-    socket->Connect(destination);
-    socket->Send(packet);
-    socket->Close();
+    clientSocket_->SendTo(packet, 0, destination);
 }
 
 char Mapper::Map(uint16_t data) const {
