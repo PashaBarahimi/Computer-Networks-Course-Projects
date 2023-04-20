@@ -27,7 +27,6 @@ const char* BASE_ADDRESS = "10.1.3.0";
 const char* NET_MASK = "255.255.255.0";
 
 // simulation
-constexpr double ERROR = 0.000001;
 constexpr double DURATION = 10.0;
 constexpr double SIMULATION_DURATION = DURATION;
 constexpr double MONITOR_TIME_INTERVAL = 1.0;
@@ -51,7 +50,7 @@ const std::string MESSAGE =
     "This is a sample text that is written to test the "
     "network which is being simulated using ns-3.35. It"
     " is worth noting that this text will be repeated. "
-    "WELCOME TO PROJECT MISASHA (Misagh and Pasha)";
+    "WELCOME TO PROJECT MISASHA (Misagh and Pasha). ";
 
 } // namespace consts
 

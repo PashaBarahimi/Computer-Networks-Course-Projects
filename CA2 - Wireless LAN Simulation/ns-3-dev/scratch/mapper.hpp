@@ -36,7 +36,7 @@ Mapper::Mapper(uint16_t port, Ipv4InterfaceContainer& ip, unsigned idx, const st
 
 void Mapper::StartApplication(void) {
     socket_ = Socket::CreateSocket(GetNode(), TcpSocketFactory::GetTypeId());
-    InetSocketAddress local = InetSocketAddress(ip_.GetAddress(idx_), port_);
+    InetSocketAddress local(ip_.GetAddress(idx_), port_);
     socket_->Bind(local);
     socket_->Listen();
 
@@ -52,7 +52,7 @@ void Mapper::SendMappedData(char data, Ipv4Address ip, uint16_t port) {
     packet->AddHeader(header);
 
     Ptr<Socket> socket = Socket::CreateSocket(GetNode(), UdpSocketFactory::GetTypeId());
-    InetSocketAddress destination = InetSocketAddress(ip, port);
+    InetSocketAddress destination(ip, port);
     socket->Connect(destination);
     socket->Send(packet);
     socket->Close();
@@ -68,7 +68,7 @@ char Mapper::Map(uint16_t data) const {
 void Mapper::HandleRead(Ptr<Socket> socket) {
     Ptr<Packet> packet;
 
-    while ((packet = socket->Recv())) {
+    while (packet = socket->Recv()) {
         if (packet->GetSize() == 0) {
             break;
         }
