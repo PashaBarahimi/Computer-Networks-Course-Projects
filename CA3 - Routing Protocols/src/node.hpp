@@ -21,7 +21,8 @@ public:
     const Edge* operator[](const std::string& destination) const;
 
     bool addEdge(Node* destination, int weight);
-    bool removeEdge(const std::string& destination);
+    bool removeEdge(Node* destination);
+    void modifyEdge(Node* destination, int weight);
     const std::vector<Edge*>& getEdges() const;
     const std::string& getName() const;
 

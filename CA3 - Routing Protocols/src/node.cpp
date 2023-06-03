@@ -30,15 +30,27 @@ bool Node::addEdge(Node* destination, int weight) {
     return true;
 }
 
-bool Node::removeEdge(const std::string& destination) {
+bool Node::removeEdge(Node* destination) {
     auto it = std::find_if(edges_.begin(), edges_.end(), [&destination](const auto& edge) {
-        return edge->destination->getName() == destination;
+        return edge->destination->getName() == destination->getName();
     });
     if (it == edges_.end()) {
         return false;
     }
+    delete *it;
     edges_.erase(it);
     return true;
+}
+
+void Node::modifyEdge(Node* destination, int weight) {
+    auto it = std::find_if(edges_.begin(), edges_.end(), [&destination](const auto& edge) {
+        return edge->destination->getName() == destination->getName();
+    });
+    if (it == edges_.end()) {
+        addEdge(destination, weight);
+        return;
+    }
+    (*it)->weight = weight;
 }
 
 const std::vector<Edge*>& Node::getEdges() const {
