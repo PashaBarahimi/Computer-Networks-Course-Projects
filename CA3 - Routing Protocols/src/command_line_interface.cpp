@@ -32,7 +32,12 @@ void CommandLineInterface::run() {
         }
         std::string command = args[0];
         args.erase(args.begin());
-        std::cout << commands_[command](args) << std::endl;
+        try {
+            std::cout << commands_.at(command)(args) << std::endl;
+        }
+        catch (const std::exception& e) {
+            std::cout << "Error: " << e.what() << std::endl;
+        }
     }
 }
 
