@@ -4,22 +4,30 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 class Node;
-using Adjacency = std::pair<Node*, int>; // destination, weight
+
+struct Edge {
+    Node* destination;
+    int weight;
+};
 
 class Node {
 public:
     Node(const std::string& name);
-    ~Node() = default;
+    ~Node();
+
+    const Edge* operator[](const std::string& destination) const;
 
     bool addEdge(Node* destination, int weight);
-    const std::unordered_map<std::string, Adjacency>& getEdges() const;
+    bool removeEdge(const std::string& destination);
+    const std::vector<Edge*>& getEdges() const;
     const std::string& getName() const;
 
 private:
     std::string name_;
-    std::unordered_map<std::string, Adjacency> edges_;
+    std::vector<Edge*> edges_;
 };
 
 #endif // NODE_HPP_INCLUDE
