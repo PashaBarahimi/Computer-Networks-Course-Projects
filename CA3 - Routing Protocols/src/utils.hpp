@@ -15,6 +15,7 @@ std::string replicate(const std::string& str, int n);
 std::string ljust(const std::string& str, int n);
 std::string rjust(const std::string& str, int n);
 std::string center(const std::string& str, int n);
+std::string join(const std::vector<std::string>& strs, const std::string& delim);
 
 } // namespace utils
 

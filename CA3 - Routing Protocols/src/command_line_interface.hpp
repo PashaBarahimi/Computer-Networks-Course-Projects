@@ -24,8 +24,13 @@ private:
     std::string show(const std::vector<std::string>& args);
     std::string modify(const std::vector<std::string>& args);
     std::string remove(const std::vector<std::string>& args);
-    // std::string lsrp(const std::vector<std::string>& args);
+    std::string lsrp(const std::vector<std::string>& args);
     // std::string dvrp(const std::vector<std::string>& args);
+
+    std::string getLsrpInfo(const std::vector<std::vector<int>>& table) const;
+    std::string getLsrpShortestPaths(const std::string& src,
+                                     const std::unordered_map<std::string, std::vector<std::string>>& paths,
+                                     const std::vector<int>& costs) const;
 };
 
 #endif // COMMAND_LINE_INTERFACE_HPP_INCLUDE
