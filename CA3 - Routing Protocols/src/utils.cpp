@@ -68,4 +68,15 @@ std::string center(const std::string& str, int n) {
     return replicate(' ', left) + str + replicate(' ', right);
 }
 
+std::string join(const std::vector<std::string>& strs, const std::string& delim) {
+    std::string result;
+    for (unsigned i = 0; i < strs.size(); ++i) {
+        result += strs[i];
+        if (i != strs.size() - 1) {
+            result += delim;
+        }
+    }
+    return result;
+}
+
 } // namespace utils
