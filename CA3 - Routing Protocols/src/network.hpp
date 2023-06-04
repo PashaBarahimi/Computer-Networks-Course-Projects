@@ -26,6 +26,7 @@ public:
     const std::vector<std::vector<int>> getAdjacencyMatrix() const;
 
     std::vector<std::vector<int>> getLsrpTable(Node* src);
+    std::vector<int> getDvrpTable(Node* src);
 
     std::unordered_map<std::string, std::vector<std::string>> getShortestPaths() const;
 
