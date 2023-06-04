@@ -35,33 +35,31 @@ bool Network::addNode(const std::string& name) {
 }
 
 bool Network::addEdge(const std::string& source, const std::string& destination, int weight) {
-    if (!doesNodeExist(source) || !doesNodeExist(destination)) {
+    Node* src = (*this)[source];
+    Node* dest = (*this)[destination];
+    if (src == nullptr || dest == nullptr) {
         return false;
     }
-    bool res = (*this)[source]->addEdge((*this)[destination], weight);
-    if (!res) {
-        return false;
-    }
-    return (*this)[destination]->addEdge((*this)[source], weight);
+    return src->addEdge(dest, weight) && dest->addEdge(src, weight);
 }
 
 bool Network::removeEdge(const std::string& source, const std::string& destination) {
-    if (!doesNodeExist(source) || !doesNodeExist(destination)) {
+    Node* src = (*this)[source];
+    Node* dest = (*this)[destination];
+    if (src == nullptr || dest == nullptr) {
         return false;
     }
-    bool res = (*this)[source]->removeEdge((*this)[destination]);
-    if (!res) {
-        return false;
-    }
-    return (*this)[destination]->removeEdge((*this)[source]);
+    return src->removeEdge(dest) && dest->removeEdge(src);
 }
 
 void Network::modifyEdge(const std::string& source, const std::string& destination, int weight) {
-    if (!doesNodeExist(source) || !doesNodeExist(destination)) {
+    Node* src = (*this)[source];
+    Node* dest = (*this)[destination];
+    if (src == nullptr || dest == nullptr) {
         return;
     }
-    (*this)[source]->modifyEdge((*this)[destination], weight);
-    (*this)[destination]->modifyEdge((*this)[source], weight);
+    src->modifyEdge(dest, weight);
+    dest->modifyEdge(src, weight);
 }
 
 const std::vector<Node*>& Network::getNodes() const {

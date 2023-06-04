@@ -2,8 +2,6 @@
 #define NODE_HPP_INCLUDE
 
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 class Node;
@@ -15,7 +13,7 @@ struct Edge {
 
 class Node {
 public:
-    Node(const std::string& name);
+    Node(std::string name);
     ~Node();
 
     const Edge* operator[](const std::string& destination) const;
@@ -23,12 +21,15 @@ public:
     bool addEdge(Node* destination, int weight);
     bool removeEdge(Node* destination);
     void modifyEdge(Node* destination, int weight);
-    const std::vector<Edge*>& getEdges() const;
+
     const std::string& getName() const;
+    const std::vector<Edge*>& getEdges() const;
 
 private:
     std::string name_;
     std::vector<Edge*> edges_;
+
+    std::vector<Edge*>::iterator findDestNode(Node* destination);
 };
 
 #endif // NODE_HPP_INCLUDE

@@ -17,21 +17,29 @@ CommandLineInterface::CommandLineInterface(Network& network) : network_(network)
 }
 
 void CommandLineInterface::run() {
-    std::string command;
+    std::string line;
     std::vector<std::string> args;
     while (true) {
         std::cout << "> ";
-        std::getline(std::cin, command);
-        args = utils::split(command, ' ');
-        if (args[0] == "exit") {
+        if (!std::getline(std::cin, line)) {
             break;
         }
-        if (commands_.find(args[0]) == commands_.end()) {
+        if (line.empty()) {
+            continue;
+        }
+
+        args = utils::split(line, ' ');
+        std::string command = args[0];
+        args.erase(args.begin());
+
+        if (command == "exit") {
+            break;
+        }
+        if (commands_.find(command) == commands_.end()) {
             std::cout << "Unknown command: " << args[0] << std::endl;
             continue;
         }
-        std::string command = args[0];
-        args.erase(args.begin());
+
         try {
             std::cout << commands_.at(command)(args) << std::endl;
         }
@@ -42,24 +50,25 @@ void CommandLineInterface::run() {
 }
 
 std::string CommandLineInterface::help(const std::vector<std::string>& args) {
-    std::string help =
-        "Available commands:\n"
-        "  help - show this message\n"
-        "  topology [<s>-<d>-<w>] - create a topology\n"
-        "  show - show the current topology\n"
-        "  modify <s>-<d>-<w> - modify the weight of an edge\n"
-        "  remove <s>-<d> - remove an edge\n"
-        "  lsrp <s> - run the link state routing protocol\n"
-        "  dvrp <s> - run the distance vector routing protocol\n"
-        "  exit - exit the program\n";
+    static const std::string help =
+        "Available commands:"
+        "\n  help - show this message"
+        "\n  topology [<s>-<d>-<w>] - create a topology"
+        "\n  show - show the current topology"
+        "\n  modify <s>-<d>-<w> - modify the weight of an edge"
+        "\n  remove <s>-<d> - remove an edge"
+        "\n  lsrp <s> - run the link state routing protocol"
+        "\n  dvrp <s> - run the distance vector routing protocol"
+        "\n  exit - exit the program\n";
     return help;
 }
 
 std::string CommandLineInterface::topology(const std::vector<std::string>& args) {
-    static std::string usage = "Usage: topology [<s>-<d>-<w>]";
-    if (args.size() == 0) {
+    static const std::string usage = "Usage: topology [<s>-<d>-<w>]";
+    if (args.empty()) {
         return usage;
     }
+
     for (const std::string& arg : args) {
         std::vector<std::string> edge = utils::split(arg, '-');
         if (edge.size() != 3) {
@@ -89,38 +98,41 @@ std::string CommandLineInterface::topology(const std::vector<std::string>& args)
 std::string CommandLineInterface::show(const std::vector<std::string>& args) {
     auto nodes = network_.getNodes();
     auto adjMatrix = network_.getAdjacencyMatrix();
+
     int maxLen = 0;
     for (auto node : nodes) {
-        maxLen = std::max(maxLen, static_cast<int>(node->getName().size()));
+        maxLen = std::max<int>(maxLen, node->getName().size());
     }
-    for (auto adjRow : adjMatrix) {
+    for (const auto& adjRow : adjMatrix) {
         for (auto adjCell : adjRow) {
-            maxLen = std::max(maxLen, static_cast<int>(std::to_string(adjCell).size()));
+            maxLen = std::max<int>(maxLen, std::to_string(adjCell).size());
         }
     }
-    std::string result = "";
-    result += utils::replicate(" ", maxLen) + " | ";
+
+    std::string result;
+    result += utils::replicate(' ', maxLen) + " | ";
     for (auto node : nodes) {
-        result += utils::rjust(node->getName(), maxLen) + " ";
+        result += utils::rjust(node->getName(), maxLen) + ' ';
     }
     int lineLen = result.size();
-    result += "\n";
-    result += utils::replicate("-", lineLen) + "\n";
+    result += '\n';
+    result += utils::replicate('-', lineLen) + '\n';
     for (unsigned i = 0; i < adjMatrix.size(); ++i) {
         result += utils::rjust(nodes[i]->getName(), maxLen) + " | ";
         for (unsigned j = 0; j < adjMatrix[i].size(); ++j) {
-            result += utils::rjust(std::to_string(adjMatrix[i][j]), maxLen) + " ";
+            result += utils::rjust(std::to_string(adjMatrix[i][j]), maxLen) + ' ';
         }
-        result += "\n";
+        result += '\n';
     }
     return result;
 }
 
 std::string CommandLineInterface::modify(const std::vector<std::string>& args) {
-    static std::string usage = "Usage: modify <s>-<d>-<w>";
+    static const std::string usage = "Usage: modify <s>-<d>-<w>";
     if (args.size() != 1) {
         return usage;
     }
+
     std::vector<std::string> edge = utils::split(args[0], '-');
     if (edge.size() != 3) {
         return usage;
@@ -146,10 +158,11 @@ std::string CommandLineInterface::modify(const std::vector<std::string>& args) {
 }
 
 std::string CommandLineInterface::remove(const std::vector<std::string>& args) {
-    static std::string usage = "Usage: remove <s>-<d>";
+    static const std::string usage = "Usage: remove <s>-<d>";
     if (args.size() != 1) {
         return usage;
     }
+
     std::vector<std::string> edge = utils::split(args[0], '-');
     if (edge.size() != 2) {
         return usage;

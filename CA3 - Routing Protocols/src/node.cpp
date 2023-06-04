@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-Node::Node(const std::string& name) : name_(name) {}
+Node::Node(std::string name) : name_(std::move(name)) {}
 
 Node::~Node() {
     for (auto& edge : edges_) {
@@ -20,10 +20,15 @@ const Edge* Node::operator[](const std::string& destination) const {
     return *it;
 }
 
+std::vector<Edge*>::iterator Node::findDestNode(Node* destination) {
+    return std::find_if(edges_.begin(), edges_.end(), [&destination](const auto& edge) {
+        return edge->destination->getName() == destination->getName();
+    });
+}
+
 bool Node::addEdge(Node* destination, int weight) {
-    if (std::find_if(edges_.begin(), edges_.end(), [&destination](const auto& edge) {
-            return edge->destination->getName() == destination->getName();
-        }) != edges_.end()) {
+    auto it = findDestNode(destination);
+    if (it != edges_.end()) {
         return false;
     }
     edges_.push_back(new Edge{destination, weight});
@@ -31,9 +36,7 @@ bool Node::addEdge(Node* destination, int weight) {
 }
 
 bool Node::removeEdge(Node* destination) {
-    auto it = std::find_if(edges_.begin(), edges_.end(), [&destination](const auto& edge) {
-        return edge->destination->getName() == destination->getName();
-    });
+    auto it = findDestNode(destination);
     if (it == edges_.end()) {
         return false;
     }
@@ -43,9 +46,7 @@ bool Node::removeEdge(Node* destination) {
 }
 
 void Node::modifyEdge(Node* destination, int weight) {
-    auto it = std::find_if(edges_.begin(), edges_.end(), [&destination](const auto& edge) {
-        return edge->destination->getName() == destination->getName();
-    });
+    auto it = findDestNode(destination);
     if (it == edges_.end()) {
         addEdge(destination, weight);
         return;
@@ -53,10 +54,10 @@ void Node::modifyEdge(Node* destination, int weight) {
     (*it)->weight = weight;
 }
 
-const std::vector<Edge*>& Node::getEdges() const {
-    return edges_;
-}
-
 const std::string& Node::getName() const {
     return name_;
+}
+
+const std::vector<Edge*>& Node::getEdges() const {
+    return edges_;
 }
