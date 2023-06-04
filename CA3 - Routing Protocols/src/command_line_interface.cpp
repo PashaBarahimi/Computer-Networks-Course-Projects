@@ -184,10 +184,11 @@ std::string CommandLineInterface::remove(const std::vector<std::string>& args) {
 }
 
 std::string CommandLineInterface::lsrp(const std::vector<std::string>& args) {
-    static std::string usage = "Usage: lsrp <s>";
+    static const std::string usage = "Usage: lsrp <s>";
     if (args.size() > 1) {
         return usage;
     }
+
     std::vector<Node*> sources;
     if (args.size() == 0) {
         sources = network_.getNodes();
@@ -198,10 +199,11 @@ std::string CommandLineInterface::lsrp(const std::vector<std::string>& args) {
         }
         sources.push_back(network_[args[0]]);
     }
+
     auto start = std::chrono::high_resolution_clock::now();
-    std::string result = "";
+    std::string result;
     for (auto source : sources) {
-        result += "Source: " + source->getName() + "\n";
+        result += "Source: " + source->getName() + '\n';
         auto table = network_.getLsrpTable(source);
         result += getLsrpInfo(table);
         result += getLsrpShortestPaths(source->getName(), network_.getShortestPaths(), table.back());
@@ -213,7 +215,6 @@ std::string CommandLineInterface::lsrp(const std::vector<std::string>& args) {
 }
 
 std::string CommandLineInterface::getLsrpInfo(const std::vector<std::vector<int>>& table) const {
-    std::string result = "";
     auto nodes = network_.getNodes();
     int maxLen = 0;
     for (auto node : nodes) {
@@ -224,6 +225,8 @@ std::string CommandLineInterface::getLsrpInfo(const std::vector<std::vector<int>
             maxLen = std::max<int>(maxLen, std::to_string(cell).size());
         }
     }
+
+    std::string result;
     for (unsigned i = 0; i < table.size(); ++i) {
         result += "Iter " + std::to_string(i + 1) + ":\n";
         std::string dests = "Dest ";
@@ -231,13 +234,13 @@ std::string CommandLineInterface::getLsrpInfo(const std::vector<std::vector<int>
             dests += utils::rjust(nodes[j]->getName(), maxLen) + " | ";
         }
         int lineLen = dests.size();
-        result += dests + "\n";
+        result += dests + '\n';
         result += "Cost ";
         for (unsigned j = 0; j < table[i].size(); ++j) {
             result += utils::rjust(std::to_string(table[i][j]), maxLen) + " | ";
         }
-        result += "\n";
-        result += utils::replicate('-', lineLen) + "\n";
+        result += '\n';
+        result += utils::replicate('-', lineLen) + '\n';
     }
     return result;
 }
@@ -254,7 +257,8 @@ std::string CommandLineInterface::getLsrpShortestPaths(const std::string& src,
         }
         table[i + 1][0] = src + "->" + nodes[i]->getName();
         table[i + 1][1] = std::to_string(costs[i]);
-        table[i + 1][2] = utils::join(paths.at(nodes[i]->getName()), "->");
+        auto path = paths.at(nodes[i]->getName());
+        table[i + 1][2] = (path[0] == src) ? utils::join(path, "->") : "None";
     }
 
     int srcIndex = network_.getNodeIndex(src);
@@ -265,12 +269,13 @@ std::string CommandLineInterface::getLsrpShortestPaths(const std::string& src,
             maxLen = std::max<int>(maxLen, cell.size());
         }
     }
-    std::string result = "";
+
+    std::string result;
     for (auto& row : table) {
         for (auto& cell : row) {
             result += utils::center(cell, maxLen) + " | ";
         }
-        result += "\n";
+        result += '\n';
     }
     return result;
 }

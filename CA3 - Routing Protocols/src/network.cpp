@@ -17,7 +17,7 @@ Node* Network::operator[](const std::string& name) const {
     return nodes_[it->second];
 }
 
-Node* Network::operator[](const int index) const {
+Node* Network::operator[](int index) const {
     if (index < 0 || static_cast<unsigned>(index) >= nodes_.size()) {
         return nullptr;
     }
@@ -69,7 +69,7 @@ const std::vector<Node*>& Network::getNodes() const {
     return nodes_;
 }
 
-const int Network::getNodeIndex(const std::string& name) const {
+int Network::getNodeIndex(const std::string& name) const {
     auto it = nodeMap_.find(name);
     if (it == nodeMap_.end()) {
         return -1;
@@ -89,19 +89,34 @@ const std::vector<std::vector<int>> Network::getAdjacencyMatrix() const {
     return matrix;
 }
 
+struct NodeDistance {
+    Node* destination;
+    int distance;
+
+    bool operator<(const NodeDistance& other) const {
+        return distance < other.distance;
+    }
+    bool operator>(const NodeDistance& other) const {
+        return distance > other.distance;
+    }
+};
+
 std::vector<std::vector<int>> Network::getLsrpTable(Node* src) {
     std::vector<std::vector<int>> iterTable;
     std::unordered_map<Node*, int> distance;
     std::unordered_map<Node*, Node*> parent;
     for (auto& node : nodes_) {
         distance[node] = -1;
+        parent[node] = nullptr;
     }
+
     distance[src] = 0;
-    parent[src] = nullptr;
-    std::priority_queue<DistanceVector, std::vector<DistanceVector>, std::greater<DistanceVector>> pq;
-    pq.push({src, 0});
     iterTable.push_back(std::vector<int>(nodes_.size(), -1));
-    iterTable.back()[nodeMap_.find(src->getName())->second] = 0;
+    iterTable.back()[nodeMap_[src->getName()]] = 0;
+
+    std::priority_queue<NodeDistance, std::vector<NodeDistance>, std::greater<NodeDistance>> pq;
+    pq.push({src, 0});
+
     while (!pq.empty()) {
         auto top = pq.top();
         pq.pop();
@@ -110,17 +125,20 @@ std::vector<std::vector<int>> Network::getLsrpTable(Node* src) {
         if (dist > distance[node]) {
             continue;
         }
-        iterTable.push_back(std::vector<int>(iterTable.back()));
+
+        std::vector<int> currIter = iterTable.back();
         for (auto& edge : node->getEdges()) {
             int newDist = dist + edge->weight;
             if (distance[edge->destination] == -1 || newDist < distance[edge->destination]) {
                 distance[edge->destination] = newDist;
                 pq.push({edge->destination, newDist});
                 parent[edge->destination] = node;
-                iterTable.back()[nodeMap_.find(edge->destination->getName())->second] = newDist;
+                currIter[nodeMap_[edge->destination->getName()]] = newDist;
             }
         }
+        iterTable.push_back(std::move(currIter));
     }
+
     parent_ = parent;
     iterTable.erase(iterTable.begin());
     if (iterTable.size() > 1 && iterTable.back() == iterTable[iterTable.size() - 2]) {
@@ -129,14 +147,14 @@ std::vector<std::vector<int>> Network::getLsrpTable(Node* src) {
     return iterTable;
 }
 
-const std::unordered_map<std::string, std::vector<std::string>> Network::getShortestPaths() const {
+std::unordered_map<std::string, std::vector<std::string>> Network::getShortestPaths() const {
     std::unordered_map<std::string, std::vector<std::string>> paths;
     for (auto& node : nodes_) {
         std::vector<std::string> path;
         Node* curr = node;
         while (curr != nullptr) {
             path.push_back(curr->getName());
-            curr = parent_.find(curr)->second;
+            curr = parent_.at(curr);
         }
         std::reverse(path.begin(), path.end());
         paths[node->getName()] = path;
