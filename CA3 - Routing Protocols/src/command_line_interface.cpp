@@ -53,14 +53,14 @@ void CommandLineInterface::run() {
 std::string CommandLineInterface::help(const std::vector<std::string>& args) {
     static const std::string help =
         "Available commands:"
-        "\n  help - show this message"
+        "\n  help                   - show this message"
         "\n  topology [<s>-<d>-<w>] - create a topology"
-        "\n  show - show the current topology"
-        "\n  modify <s>-<d>-<w> - modify the weight of an edge"
-        "\n  remove <s>-<d> - remove an edge"
-        "\n  lsrp <s> - run the link state routing protocol"
-        "\n  dvrp <s> - run the distance vector routing protocol"
-        "\n  exit - exit the program\n";
+        "\n  show                   - show the current topology"
+        "\n  modify <s>-<d>-<w>     - modify the weight of an edge"
+        "\n  remove <s>-<d>         - remove an edge"
+        "\n  lsrp <s>               - run the link state routing protocol"
+        "\n  dvrp <s>               - run the distance vector routing protocol"
+        "\n  exit                   - exit the program\n";
     return help;
 }
 

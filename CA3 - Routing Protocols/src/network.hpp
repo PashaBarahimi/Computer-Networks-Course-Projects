@@ -23,7 +23,7 @@ public:
 
     const std::vector<Node*>& getNodes() const;
     int getNodeIndex(const std::string& name) const;
-    const std::vector<std::vector<int>> getAdjacencyMatrix() const;
+    std::vector<std::vector<int>> getAdjacencyMatrix() const;
 
     std::vector<std::vector<int>> getLsrpTable(Node* src);
     std::vector<int> getDvrpTable(Node* src);
