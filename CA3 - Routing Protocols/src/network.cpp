@@ -77,7 +77,7 @@ int Network::getNodeIndex(const std::string& name) const {
     return it->second;
 }
 
-const std::vector<std::vector<int>> Network::getAdjacencyMatrix() const {
+std::vector<std::vector<int>> Network::getAdjacencyMatrix() const {
     std::vector<std::vector<int>> matrix(nodes_.size(), std::vector<int>(nodes_.size(), -1));
     for (unsigned i = 0; i < nodes_.size(); ++i) {
         matrix[i][i] = 0;
