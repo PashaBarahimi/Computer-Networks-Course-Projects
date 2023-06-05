@@ -147,6 +147,37 @@ std::vector<std::vector<int>> Network::getLsrpTable(Node* src) {
     return iterTable;
 }
 
+std::vector<int> Network::getDvrpTable(Node* src) {
+    std::unordered_map<Node*, int> distance;
+    std::unordered_map<Node*, Node*> parent;
+    for (auto& node : nodes_) {
+        distance[node] = -1;
+        parent[node] = nullptr;
+    }
+    distance[src] = 0;
+
+    for (unsigned i = 0; i < nodes_.size() - 1; ++i) {
+        for (auto& node : nodes_) {
+            for (auto& edge : node->getEdges()) {
+                if (distance[node] == -1) {
+                    continue;
+                }
+                if (distance[edge->destination] == -1 || distance[node] + edge->weight < distance[edge->destination]) {
+                    distance[edge->destination] = distance[node] + edge->weight;
+                    parent[edge->destination] = node;
+                }
+            }
+        }
+    }
+
+    parent_ = parent;
+    std::vector<int> costs;
+    for (auto& node : nodes_) {
+        costs.push_back(distance[node]);
+    }
+    return costs;
+}
+
 std::unordered_map<std::string, std::vector<std::string>> Network::getShortestPaths() const {
     std::unordered_map<std::string, std::vector<std::string>> paths;
     for (auto& node : nodes_) {
