@@ -329,5 +329,11 @@ dvrp:
 Now we will remove the 4-10 edge: `remove 4-10`
 
 ![remove](assets/remove.png)
+
+lsrp:
+
 ![lsrp](assets/lsrp2.png)
+
+dvrp:
+
 ![dvrp](assets/dvrp2.png)
