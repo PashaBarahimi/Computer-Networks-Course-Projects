@@ -1,0 +1,73 @@
+{
+    "users": [
+        {
+            "admin": true,
+            "id": 0,
+            "password": "jGl25bVBBBW96Qi9Te4V37Fnqchz/Eu4qB9vKrRIqRg=",
+            "username": "Admin"
+        },
+        {
+            "address": "Canada, Montral",
+            "admin": false,
+            "balance": 1000,
+            "id": 1,
+            "password": "A6xnQhbz4Vx2HuGl4lXwZ5U2I8iziLRFnhP5eNfIRvQ=",
+            "phone": "00945692356",
+            "username": "Morad"
+        },
+        {
+            "address": "United States, NewYork",
+            "admin": false,
+            "balance": 200,
+            "id": 2,
+            "password": "/iWStCpyfpd/BVlHOFtwnMgrFrmof4jGq/OQDWXQzcM=",
+            "phone": "00125692356",
+            "username": "Jasem"
+        },
+        {
+            "address": "Iran, Rasht",
+            "admin": false,
+            "balance": 10,
+            "id": 3,
+            "password": "SZvH352Ic8HDjmiYF3w0Oyo00utDF4qetO/LmTNmyM0=",
+            "phone": "0098911321777",
+            "username": "Pedram"
+        },
+        {
+            "address": "Iran, Karaj",
+            "admin": false,
+            "balance": 0,
+            "id": 4,
+            "password": "XohImNooBHFR0OVvjcYpJ3NgPQ1qq73WKhHvch0VQtg=",
+            "phone": "00989108101010",
+            "username": "Misagh"
+        },
+        {
+            "address": "Iran, Tehran",
+            "admin": false,
+            "balance": 10000,
+            "id": 5,
+            "password": "ybGcw7rVq6POb+CCxKEK5ZeYHRO2FZk1uRWQYJq6pYk=",
+            "phone": "00989905552525",
+            "username": "Pasha"
+        },
+        {
+            "address": "Iran, Karaj",
+            "admin": false,
+            "balance": 2,
+            "id": 6,
+            "password": "zKL5DJ2ETlKpM5vkEiGDW/pJKwpAKyzm2fdcWBHHs78=",
+            "phone": "00989303004010",
+            "username": "Simin"
+        },
+        {
+            "address": "UK, NewYork",
+            "admin": false,
+            "balance": 10000000,
+            "id": 7,
+            "password": "HA2UIAPHeLNaQWJn4x5SkmuZJpNllMXnm2H5dx+GIlU=",
+            "phone": "00989121001010",
+            "username": "Hapaloo"
+        }
+    ]
+}
