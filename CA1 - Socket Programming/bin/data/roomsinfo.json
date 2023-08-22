@@ -1,61 +1,175 @@
 {
     "rooms": [
         {
-            "number": "101",
-            "isFull": false,
-            "price": 100,
-            "maxCapacity": 2,
             "capacity": 2,
+            "isFull": false,
+            "maxCapacity": 5,
+            "number": "501",
+            "price": 15,
+            "users": [
+                {
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-26",
+                    "id": 1,
+                    "numOfBeds": 2
+                },
+                {
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-28",
+                    "id": 2,
+                    "numOfBeds": 1
+                }
+            ]
+        },
+        {
+            "capacity": 2,
+            "isFull": false,
+            "maxCapacity": 2,
+            "number": "402",
+            "price": 250,
             "users": []
         },
         {
-            "number": "102",
+            "capacity": 1,
             "isFull": false,
-            "price": 73,
-            "maxCapacity": 3,
-            "capacity": 2,
-            "users": [
-                {
-                    "id": 1,
-                    "numOfBeds": 1,
-                    "checkInDate": "2023-02-25",
-                    "checkOutDate": "2023-02-27"
-                }
-            ]
-        },
-        {
-            "number": "201",
-            "isFull": true,
-            "price": 100,
             "maxCapacity": 2,
-            "capacity": 0,
+            "number": "601",
+            "price": 75,
             "users": [
                 {
-                    "id": 2,
-                    "numOfBeds": 2,
                     "checkInDate": "2023-02-25",
-                    "checkOutDate": "2023-02-27"
-                }
-            ]
-        },
-        {
-            "number": "301",
-            "isFull": true,
-            "price": 100,
-            "maxCapacity": 1,
-            "capacity": 0,
-            "users": [
-                {
-                    "id": 2,
-                    "numOfBeds": 1,
-                    "checkInDate": "2023-02-27",
-                    "checkOutDate": "2023-02-28"
+                    "checkOutDate": "2023-02-27",
+                    "id": 4,
+                    "numOfBeds": 1
                 },
                 {
-                    "id": 3,
-                    "numOfBeds": 1,
+                    "checkInDate": "2023-02-27",
+                    "checkOutDate": "2023-02-28",
+                    "id": 6,
+                    "numOfBeds": 2
+                }
+            ]
+        },
+        {
+            "capacity": 0,
+            "isFull": true,
+            "maxCapacity": 1,
+            "number": "401",
+            "price": 100,
+            "users": [
+                {
                     "checkInDate": "2023-02-25",
-                    "checkOutDate": "2023-02-26"
+                    "checkOutDate": "2023-02-26",
+                    "id": 3,
+                    "numOfBeds": 1
+                },
+                {
+                    "checkInDate": "2023-02-27",
+                    "checkOutDate": "2023-02-28",
+                    "id": 2,
+                    "numOfBeds": 1
+                }
+            ]
+        },
+        {
+            "capacity": 0,
+            "isFull": true,
+            "maxCapacity": 1,
+            "number": "301",
+            "price": 100,
+            "users": [
+                {
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-26",
+                    "id": 2,
+                    "numOfBeds": 1
+                },
+                {
+                    "checkInDate": "2023-02-27",
+                    "checkOutDate": "2023-02-28",
+                    "id": 3,
+                    "numOfBeds": 1
+                }
+            ]
+        },
+        {
+            "capacity": 2,
+            "isFull": false,
+            "maxCapacity": 2,
+            "number": "701",
+            "price": 500,
+            "users": [
+                {
+                    "checkInDate": "2023-02-27",
+                    "checkOutDate": "2023-02-28",
+                    "id": 4,
+                    "numOfBeds": 2
+                }
+            ]
+        },
+        {
+            "capacity": 0,
+            "isFull": true,
+            "maxCapacity": 2,
+            "number": "201",
+            "price": 100,
+            "users": [
+                {
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-27",
+                    "id": 2,
+                    "numOfBeds": 2
+                }
+            ]
+        },
+        {
+            "capacity": 2,
+            "isFull": false,
+            "maxCapacity": 3,
+            "number": "102",
+            "price": 73,
+            "users": [
+                {
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-27",
+                    "id": 1,
+                    "numOfBeds": 1
+                }
+            ]
+        },
+        {
+            "capacity": 0,
+            "isFull": true,
+            "maxCapacity": 2,
+            "number": "602",
+            "price": 200,
+            "users": [
+                {
+                    "checkInDate": "2023-02-25",
+                    "checkOutDate": "2023-02-28",
+                    "id": 7,
+                    "numOfBeds": 2
+                },
+                {
+                    "checkInDate": "2023-02-28",
+                    "checkOutDate": "2023-03-05",
+                    "id": 3,
+                    "numOfBeds": 2
+                }
+            ]
+        },
+        {
+            "capacity": 2,
+            "isFull": false,
+            "maxCapacity": 2,
+            "number": "101",
+            "price": 100,
+            "users": [
+                {
+                    "checkInDate": "2023-02-26",
+                    "checkOutDate": "2023-02-28",
+                    "id": 8,
+                    "numOfBeds": 1
                 }
             ]
         }

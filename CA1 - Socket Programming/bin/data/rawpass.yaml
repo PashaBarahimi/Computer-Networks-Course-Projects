@@ -1,0 +1,31 @@
+Admin:
+  password: admin
+  hashedPass: jGl25bVBBBW96Qi9Te4V37Fnqchz/Eu4qB9vKrRIqRg=
+
+Morad:
+  password: 1234
+  hashedPass: A6xnQhbz4Vx2HuGl4lXwZ5U2I8iziLRFnhP5eNfIRvQ=
+
+Jasem:
+  password: 4321
+  hashedPass: /iWStCpyfpd/BVlHOFtwnMgrFrmof4jGq/OQDWXQzcM=
+
+Pedram:
+  password: 6789
+  hashedPass: SZvH352Ic8HDjmiYF3w0Oyo00utDF4qetO/LmTNmyM0=
+
+Misagh:
+  password: password
+  hashedPass: XohImNooBHFR0OVvjcYpJ3NgPQ1qq73WKhHvch0VQtg=
+
+Pasha:
+  password: pashpass
+  hashedPass: ybGcw7rVq6POb+CCxKEK5ZeYHRO2FZk1uRWQYJq6pYk=
+
+Simin:
+  password: dinisor
+  hashedPass: zKL5DJ2ETlKpM5vkEiGDW/pJKwpAKyzm2fdcWBHHs78=
+
+Hapaloo:
+  password: hophop
+  hashedPass: t4BLkY+EzsMOEwM9ug61HAbQaAdBrJgpkWrYWVW+fio=

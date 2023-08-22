@@ -38,7 +38,7 @@ nlohmann::json HotelClient::getResponse(const nlohmann::json& req) {
         throw std::runtime_error("Could not send request to the server.");
     }
     std::string resStr;
-    if (!socket_.receive(resStr)) {
+    if (!socket_.receive(resStr) || resStr.empty()) {
         throw std::runtime_error("Could not receive response from the server.");
     }
     auto res = nlohmann::json::parse(resStr);
